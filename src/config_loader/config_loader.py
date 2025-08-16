@@ -82,7 +82,8 @@ class ProgramConfig:
         self.umask: str = config.get("umask", "022")
 
     def __repr__(self):
-        return f"<ProgramConfig ={self.command} processes={self.processes}>"
+        attrs = "\n  ".join(f"{k}={v!r}" for k, v in vars(self).items())
+        return f"<ProgramConfig:\n  {attrs}\n>"
 
 
 if __name__ == "__main__":
