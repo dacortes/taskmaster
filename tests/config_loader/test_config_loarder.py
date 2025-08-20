@@ -11,7 +11,7 @@ from pathlib import Path
 
 import yaml
 
-from ProgramConfig.ProgramConfig import ProgramConfig
+from Program.ProgramConfig.ProgramConfig import ProgramConfig
 
 
 class TestProgramConfig(unittest.TestCase):
