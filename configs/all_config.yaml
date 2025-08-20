@@ -1,0 +1,35 @@
+programs:
+  example:
+    # Command to run
+    command: "/usr/bin/myprogram --config /etc/myprogram/config.yaml"
+    # Number of processes to start and keep running
+    processes: 3
+    # Whether to start this program at system launch
+    start_at_launch: true
+    # Restart policy: always, never, or on_failure (unexpected exits only)
+    restart_policy: "always"
+    # Exit codes considered "expected" (won't trigger restart in on_failure mode)
+    expected_exit_codes:
+      - 0
+      - 2
+    # Time (in seconds) the program must run to be considered successfully started
+    success_timeout: 10
+    # Maximum number of restart attempts before giving up
+    max_restarts: 5
+    # Signal to use for graceful shutdown
+    stop_signal: "SIGTERM"
+    # Grace period (in seconds) to wait after stop_signal before killing
+    stop_timeout: 15
+    # Logging/output options
+    discard_output: false
+    stdout: "/var/log/myprogram.out"
+    stderr: "/var/log/myprogram.err"
+    # Environment variables for the program
+    env:
+      APP_ENV: "production"
+      DB_HOST: "localhost"
+      DB_PORT: "5432"
+    # Working directory for the process
+    working_dir: "/opt/myprogram"
+    # Umask applied before launching the process
+    umask: "027"
