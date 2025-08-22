@@ -51,6 +51,9 @@ class ProgramConfig:
             config = yaml.safe_load(f)
 
         # Command and process settings
+        self.name_process : str = config.get("name", None)
+        if not self.name_process:
+            raise ValueError("Missing required config key: name")
         self.command: str = config.get("command", None)
         if not self.command:
             raise ValueError("Missing required config key: command")
