@@ -47,8 +47,7 @@ def make_config():
 def test_init_assigns_program_names():
     config = make_config()
     tm = TaskMaster(config)
-
-    names = [p.program_config.name for p in tm.programs]
+    names = [p for p in tm.programs]
     assert names == ["nginx", "vogsphere"]
 
 

@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any, Iterator, List, Tuple
 
 
 class ProgramConfig(dict):
@@ -81,6 +82,45 @@ class ProgramConfig(dict):
         }
         self["working_dir"] = self.program_config.get("working_dir", str(Path.cwd()))
         self["umask"] = self.program_config.get("umask", "022")
+
+    def __getitem__(self, key: str) -> Any:
+        return super().__getitem__(key)
+
+    def __iter__(self) -> Iterator[str]:
+        return super().__iter__()
+
+    def __len__(self) -> int:
+        return super().__len__()
+
+    def items(self) -> Iterator[Tuple[str, Any]]:
+        return super().items()
+
+    def keys(self) -> List[str]:
+        return super().keys()
+
+    def values(self) -> List[Any]:
+        return super().values()
+
+    def __getattr__(self, name: str) -> Any:
+        """Allow dot-access (cfg.name) for dict keys."""
+        try:
+            return self[name]
+        except KeyError:
+            raise AttributeError(f"{self.__class__.__name__} has no attribute {name!r}")
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        """Set dict key when using dot-access, unless it's internal."""
+        if name in ("program_config",):  # internal attributes
+            super().__setattr__(name, value)
+        else:
+            self[name] = value
+
+    def __delattr__(self, name: str) -> None:
+        """Delete attribute like a dict key."""
+        try:
+            del self[name]
+        except KeyError:
+            raise AttributeError(f"{self.__class__.__name__} has no attribute {name!r}")
 
     def __repr__(self):
         attrs = "\n  ".join(f"{k}={v!r}" for k, v in vars(self).items())

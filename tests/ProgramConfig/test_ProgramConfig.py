@@ -38,7 +38,6 @@ class TestProgramConfig(unittest.TestCase):
 
     def test_load_config(self):
         cfg = ProgramConfig(self.config_data)
-
         self.assertEqual(cfg.command, self.config_data["command"])
         self.assertEqual(cfg.processes, self.config_data["processes"])
         self.assertEqual(cfg.start_at_launch, True)
