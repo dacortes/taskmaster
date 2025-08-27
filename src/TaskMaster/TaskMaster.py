@@ -1,10 +1,11 @@
 from Program import Program
+from Program.BaseUtils import BaseUtils
 
 
-class TaskMaster:
+class TaskMaster(BaseUtils):
     def __init__(self, config: dict):
         self.config = config
-        self.programs = []
+        self.programs = {}
 
         programs_config = config.get("programs", {})
         if not programs_config:
@@ -15,7 +16,17 @@ class TaskMaster:
             # we assign name using the key in the list of dicts
             if "name" not in v:
                 v["name"] = k
-            self.programs.append(Program(v))
+            self.programs[v["name"]] = Program(v)
+
+    def startProcess(self, process_name: str):
+        if process_name not in self.programs:
+            raise ValueError(self.ERROR + " The process name does not exist")
+        self.programs[process_name].startProcess()
+
+    def stopProcess(self, process_name: str):
+        if process_name not in self.programs:
+            raise ValueError(self.ERROR + " The process name does not exist")
+        self.programs[process_name].stopProcess()
 
     def __repr__(self):
         return (

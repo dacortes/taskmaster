@@ -89,4 +89,6 @@ if __name__ == "__main__":
     # test()
     args = get_args()
     tm = get_tm(args)
-    print(tm)
+    tm.startProcess("ls")
+    tm.stopProcess("ls")
+    # print(tm)
