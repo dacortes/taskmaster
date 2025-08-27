@@ -21,12 +21,13 @@ def test():
         "name": "ls",
         "command": "/bin/ls",
         "processes": 1,
+        "env": {"PORT": "8080", "foo": "loco"},
         "expected_exit_codes": [0, 1],
     }
 
     config_data2 = {
         "name": "loco",
-        "command": "/bin/ls",
+        "command": "/bin/ls -la",
         "processes": 1,
         "expected_exit_codes": [0, 1],
     }
