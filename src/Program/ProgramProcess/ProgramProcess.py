@@ -1,42 +1,98 @@
-from typing import Dict, List, Optional
-import subprocess, signal
+import copy
+import os
+import subprocess
+import time
 
 from Program.BaseUtils import BaseUtils
-# from ProgramConfig import ProgramConfig
+from Program.ProgramConfig import ProgramConfig
 
-FLAG_NAME	=	1 << 0
-FLAG_ADD	=	1 << 1
 
 class ProgramProcess(BaseUtils, dict):
+    def printContent(self, data):
+        for key, value in data:
+            print(self.BLUE + self.LIGTH + str(key) + self.END + ": " + str(value))
 
-	def __applyFunc(self, data, func, flags):
-		for key_lv1, value_lv1 in data:
-			if flags & FLAG_NAME:
-				print(self.BLUE + self.LIGTH + str(key_lv1) + self.END + ":")
-			if flags == FLAG_ADD:
-				self.addProcess(key_lv1)
-			for key_lv2, value_lv2 in value_lv1.items():
-				if flags != FLAG_ADD:
-					func(value_lv1, key_lv2, value_lv2, key_lv1)
-				if flags == FLAG_ADD and key_lv2 != "name":
-					self.updateProcess(key_lv1, {key_lv2:value_lv2})
+    def addDataProcess(self, data: ProgramConfig):
+        for proc, cont in data.items():
+            self[proc] = copy.deepcopy(cont)
 
-	def printContent(self, data, key, value, nameProcess):
-		print(" " + str(key) + " = " + str(value))
+    def startProcess(self):
+        process_name = self["name"]
+        command = self.get("command").split()
+        working_directory = self.get("working_dir", None)
+        if working_directory:
+            working_directory = os.path.expanduser(working_directory)
+        else:
+            working_directory = None
+        print(working_directory)
+        env = os.environ.copy()
+        if "env" in self:
+            env.update(self["env"])
 
-	def addProcess(self, key):
-		self[key] = {}
+        stdout = subprocess.PIPE
+        stderr = subprocess.PIPE
+        if self.get("stdout", ""):
+            stdout = open(os.path.expanduser(self["stdout"]), "a")
+        if self.get("stderr", ""):
+            stderr = open(os.path.expanduser(self["stderr"]), "a")
 
-	def updateProcess(self, key, value):
-		self[key].update(value)
+        try:
+            process = subprocess.Popen(
+                command,
+                cwd=working_directory,
+                env=env,
+                stdout=stdout,
+                stderr=stderr,
+                shell=self.get("shell", False),
+                preexec_fn=os.setsid if self.get("umask") else None,
+            )
+            self["_process"] = process
+            self["_pid"] = process.pid
+            self["_status"] = "running"
+            self[
+                "_start_time"
+            ] = time.time()  # cambiar por el del parametro solo para prueba
+            print(
+                f"{self.GREEN}{self.LIGTH}Process{self.END} '{process_name}' initialized (PID: {process.pid})"
+            )
 
-	def createProcess(self):
-		None
+        except Exception as err:
+            raise ValueError(
+                self.ERROR
+                + " in process initialization "
+                + process_name
+                + ":"
+                + str(err)
+            )
 
-	def __init__(self, ProgramConfig: dict):
-		if not ProgramConfig:
-			raise ValueError(self.ERROR + " Null parameter in constructor")
-		self.__applyFunc(ProgramConfig.items(), self.printContent, FLAG_ADD)
-		self.__applyFunc(self.items(), self.printContent, FLAG_NAME)
+    def stopProcess(self):
+        process_name = self["name"]
+        if self["_process"] is None:
+            raise ValueError(
+                self.ERROR + "Process" + process_name + "it is not running"
+            )
+        process = self["_process"]
 
+        try:
+            process.terminate()
+            try:
+                process.wait(timeout=5)
+            except Exception as e:
+                process.kill()
+                process.wait()
+                raise e
+            self["_status"] = "stopped"
+            self["_stop_time"] = time.time()  # lo mismo que arriba loco
+            print(f"{self.YELLOW} Process {self.END} '{process_name}' stopped")
+            return True
+        except Exception as err:
+            raise ValueError(
+                self.ERROR + " stopping process: " + process_name + ":" + err
+            )
 
+    def __init__(self, pc: dict):
+        if pc is None:
+            raise ValueError(self.ERROR + " Null parameter in constructor")
+        self["_process"] = None
+        self.addDataProcess(pc)
+        self.printContent(self.items())

@@ -1,12 +1,11 @@
 from pathlib import Path
-from typing import Dict, List, Optional
-
-import yaml
+from typing import Any, Iterator, List, Tuple
 
 
-class ProgramConfig:
-    def __init__(self, config_path: str):
-        self.config_path = Path(config_path)
+class ProgramConfig(dict):
+    def __init__(self, program_config: dict):
+        super().__init__()
+        self.program_config = program_config
         self._load_config()
 
     def _load_config(self):
@@ -44,45 +43,84 @@ class ProgramConfig:
             ValueError: If the required 'command' field is missing or if
                         discard_output is True while stdout or stderr are set.
         """
-        if not self.config_path.exists():
-            raise FileNotFoundError(f"Config file not found: {self.config_path}")
-
-        with open(self.config_path, "r") as f:
-            config = yaml.safe_load(f)
-
         # Command and process settings
-        self.name_process : str = config.get("name", None)
-        if not self.name_process:
+        self["name"] = self.program_config.get("name", None)
+        if not self["name"]:
             raise ValueError("Missing required config key: name")
-        self.command: str = config.get("command", None)
-        if not self.command:
+        self["command"] = self.program_config.get(
+            "command", self.program_config.get("cmd", None)
+        )
+        if not self["command"]:
             raise ValueError("Missing required config key: command")
-        self.processes: int = int(config.get("processes", 1))
-        self.start_at_launch: bool = bool(config.get("start_at_launch", False))
-        self.restart_policy: str = config.get("restart_policy", "on_failure")
-        self.expected_exit_codes: List[int] = [
-            int(code) for code in config.get("expected_exit_codes", [0])
+        self["processes"] = int(self.program_config.get("processes", 1))
+        self["start_at_launch"] = bool(
+            self.program_config.get("start_at_launch", False)
+        )
+        self["restart_policy"] = self.program_config.get("restart_policy", "on_failure")
+        self["expected_exit_codes"] = [
+            int(code) for code in self.program_config.get("expected_exit_codes", [0])
         ]
-        self.success_timeout: int = int(config.get("success_timeout", 5))  # seconds
-        self.max_restarts: int = int(config.get("max_restarts", 3))
+        self["success_timeout"] = int(
+            self.program_config.get("success_timeout", 5)
+        )  # seconds
+        self["max_restarts"] = int(self.program_config.get("max_restarts", 3))
 
         # Stopping behavior
-        self.stop_signal: str = config.get("stop_signal", "SIGTERM")
-        self.stop_timeout: int = int(config.get("stop_timeout", 10))
+        self["stop_signal"] = self.program_config.get("stop_signal", "SIGTERM")
+        self["stop_timeout"] = int(self.program_config.get("stop_timeout", 10))
 
         # Logging
-        self.stdout: Optional[str] = config.get("stdout", None)
-        self.stderr: Optional[str] = config.get("stderr", None)
-        self.discard_output: bool = bool(config.get("discard_output", False))
-        if self.discard_output and (self.stdout or self.stderr):
+        self["stdout"] = self.program_config.get("stdout", None)
+        self["stderr"] = self.program_config.get("stderr", None)
+        self["discard_output"] = bool(self.program_config.get("discard_output", False))
+        if self["discard_output"] and (self["stdout"] or self["stderr"]):
             raise ValueError("Cannot discard output if stdout or stderr are set")
 
         # Environment & execution context
-        self.env: Dict[str, str] = {
-            str(k): str(v) for k, v in config.get("env", {}).items()
+        self["env"] = {
+            str(k): str(v) for k, v in self.program_config.get("env", {}).items()
         }
-        self.working_dir: str = config.get("working_dir", str(Path.cwd()))
-        self.umask: str = config.get("umask", "022")
+        self["working_dir"] = self.program_config.get("working_dir", str(Path.cwd()))
+        self["umask"] = self.program_config.get("umask", "022")
+
+    def __getitem__(self, key: str) -> Any:
+        return super().__getitem__(key)
+
+    def __iter__(self) -> Iterator[str]:
+        return super().__iter__()
+
+    def __len__(self) -> int:
+        return super().__len__()
+
+    def items(self) -> Iterator[Tuple[str, Any]]:
+        return super().items()
+
+    def keys(self) -> List[str]:
+        return super().keys()
+
+    def values(self) -> List[Any]:
+        return super().values()
+
+    def __getattr__(self, name: str) -> Any:
+        """Allow dot-access (cfg.name) for dict keys."""
+        try:
+            return self[name]
+        except KeyError:
+            raise AttributeError(f"{self.__class__.__name__} has no attribute {name!r}")
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        """Set dict key when using dot-access, unless it's internal."""
+        if name in ("program_config",):  # internal attributes
+            super().__setattr__(name, value)
+        else:
+            self[name] = value
+
+    def __delattr__(self, name: str) -> None:
+        """Delete attribute like a dict key."""
+        try:
+            del self[name]
+        except KeyError:
+            raise AttributeError(f"{self.__class__.__name__} has no attribute {name!r}")
 
     def __repr__(self):
         attrs = "\n  ".join(f"{k}={v!r}" for k, v in vars(self).items())
@@ -90,12 +128,8 @@ class ProgramConfig:
 
 
 if __name__ == "__main__":
-    # Example usage of the class. Read a config file and print the loaded values.
-    import os
-    import tempfile
-
-    # Create a temporary YAML config
     config_data = {
+        "name": "myprogram",
         "command": "/usr/bin/myprogram",
         "processes": 2,
         "start_at_launch": True,
@@ -103,15 +137,6 @@ if __name__ == "__main__":
         "expected_exit_codes": [0, 1],
     }
 
-    with tempfile.NamedTemporaryFile(
-        delete=False, suffix=".yaml", mode="w"
-    ) as tmp_file:
-        yaml.dump(config_data, tmp_file)
-        tmp_file_path = tmp_file.name
-
     # Load the config
-    cfg = ProgramConfig(tmp_file_path)
+    cfg = ProgramConfig(config_data)
     print(cfg)
-
-    # Clean up
-    os.unlink(tmp_file_path)

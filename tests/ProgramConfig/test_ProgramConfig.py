@@ -17,7 +17,6 @@ from Program.ProgramConfig.ProgramConfig import ProgramConfig
 class TestProgramConfig(unittest.TestCase):
     def setUp(self):
         # Create a temporary YAML file
-        self.temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".yaml")
         self.config_data = {
             "command": "/usr/bin/myprogram --config /etc/myprogram/config.yaml",
             "processes": 2,
@@ -34,15 +33,11 @@ class TestProgramConfig(unittest.TestCase):
             "env": {"APP_ENV": "production", "DB_PORT": 5432},
             "working_dir": "/opt/myprogram",
             "umask": "027",
+            "name": "myprogram",
         }
-        yaml.dump(self.config_data, open(self.temp_file.name, "w"))
-
-    def tearDown(self):
-        os.unlink(self.temp_file.name)
 
     def test_load_config(self):
-        cfg = ProgramConfig(self.temp_file.name)
-
+        cfg = ProgramConfig(self.config_data)
         self.assertEqual(cfg.command, self.config_data["command"])
         self.assertEqual(cfg.processes, self.config_data["processes"])
         self.assertEqual(cfg.start_at_launch, True)
@@ -59,15 +54,10 @@ class TestProgramConfig(unittest.TestCase):
         self.assertEqual(cfg.working_dir, "/opt/myprogram")
         self.assertEqual(cfg.umask, "027")
 
-    def test_missing_file(self):
-        with self.assertRaises(FileNotFoundError):
-            ProgramConfig("/non/existent/path.yaml")
-
     def test_defaults(self):
         # Empty YAML should load defaults
-        empty_file = tempfile.NamedTemporaryFile(delete=False, suffix=".yaml")
-        yaml.dump({"command": "/usr/bin/myprogram"}, open(empty_file.name, "w"))
-        cfg = ProgramConfig(empty_file.name)
+        config = {"name": "myprogram", "command": "/usr/bin/myprogram"}
+        cfg = ProgramConfig(config)
         self.assertEqual(cfg.processes, 1)
         self.assertFalse(cfg.start_at_launch)
         self.assertEqual(cfg.restart_policy, "on_failure")
@@ -82,34 +72,25 @@ class TestProgramConfig(unittest.TestCase):
         self.assertEqual(cfg.env, {})
         self.assertEqual(cfg.working_dir, str(Path.cwd()))
         self.assertEqual(cfg.umask, "022")
-        os.unlink(empty_file.name)
 
     def test_discard_output_conflict(self):
-        conflict_cfg = tempfile.NamedTemporaryFile(delete=False, suffix=".yaml")
         conflict_data = {
+            "name": "myprogram",
             "command": "/usr/bin/myprogram",
             "discard_output": True,
             "stdout": "/tmp/out.log",
         }
-        yaml.dump(conflict_data, open(conflict_cfg.name, "w"))
         with self.assertRaises(ValueError) as cm:
-            ProgramConfig(conflict_cfg.name)
+            ProgramConfig(conflict_data)
         self.assertIn(
             "Cannot discard output if stdout or stderr are set",
             str(cm.exception),
         )
-        os.unlink(conflict_cfg.name)
 
     def test_missing_command_raises(self):
-        # Empty YAML should raise ValueError for missing 'command'
-        empty_file = tempfile.NamedTemporaryFile(delete=False, suffix=".yaml")
-        yaml.dump({}, open(empty_file.name, "w"))
-
         with self.assertRaises(ValueError) as cm:
-            ProgramConfig(empty_file.name)
+            ProgramConfig({})
         self.assertIn("Missing required config key", str(cm.exception))
-
-        os.unlink(empty_file.name)
 
 
 if __name__ == "__main__":
