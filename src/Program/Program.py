@@ -12,7 +12,10 @@ class Program:
         self.process.startProcess()
 
     def stopProcess(self):
-        self.process.stopProcess()
+        try:
+            self.process.stopProcess(index=0)
+        except Exception as err:
+            None
 
     def __getitem__(self, key):
         return self.process[key]

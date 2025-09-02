@@ -1,10 +1,11 @@
 programs:
   ls:
-    cmd: "/usr/bin/ls"
-    numprocs: 1
+    cmd: "/usr/bin/ls -la"
+    processes: 2
     umask: 022
     workingdir: /tmp
     autostart: true
+    start_at_launch: true
     autorestart: unexpected
     exitcodes:
     - 0
@@ -13,8 +14,8 @@ programs:
     starttime: 5
     stopsignal: TERM
     stoptime: 10
-    stdout: /tmp/nginx.stdout
-    stderr: /tmp/nginx.stderr
+    stdout: /tmp/ls.stdout
+    stderr: /tmp/ls.stderr
     env:
       STARTED_BY: taskmaster
       ANSWER: 42
