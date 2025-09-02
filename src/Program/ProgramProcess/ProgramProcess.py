@@ -3,6 +3,7 @@ import os
 import subprocess
 import time
 
+from Logger import LOGGER as logger
 from Program.BaseUtils import BaseUtils
 from Program.ProgramConfig import ProgramConfig
 
@@ -10,13 +11,16 @@ from Program.ProgramConfig import ProgramConfig
 class ProgramProcess(BaseUtils, dict):
     def printContent(self, data):
         for key, value in data:
-            print(self.BLUE + self.LIGTH + str(key) + self.END + ": " + str(value))
+            logger.debug(
+                self.BLUE + self.LIGTH + str(key) + self.END + ": " + str(value)
+            )
 
     def addDataProcess(self, data: ProgramConfig):
         for proc, cont in data.items():
             self[proc] = copy.deepcopy(cont)
 
     def startProcess(self):
+        logger.info(f"Starting process: {self['name']}")
         process_name = self["name"]
         command = self.get("command").split()
         working_directory = self.get("working_dir", None)
@@ -24,7 +28,7 @@ class ProgramProcess(BaseUtils, dict):
             working_directory = os.path.expanduser(working_directory)
         else:
             working_directory = None
-        print(working_directory)
+        logger.debug(working_directory)
         env = os.environ.copy()
         if "env" in self:
             env.update(self["env"])
@@ -52,7 +56,7 @@ class ProgramProcess(BaseUtils, dict):
             self[
                 "_start_time"
             ] = time.time()  # cambiar por el del parametro solo para prueba
-            print(
+            logger.debug(
                 f"{self.GREEN}{self.LIGTH}Process{self.END} '{process_name}' initialized (PID: {process.pid})"
             )
 
@@ -83,7 +87,7 @@ class ProgramProcess(BaseUtils, dict):
                 raise e
             self["_status"] = "stopped"
             self["_stop_time"] = time.time()  # lo mismo que arriba loco
-            print(f"{self.YELLOW} Process {self.END} '{process_name}' stopped")
+            logger.warning(f"{self.YELLOW} Process {self.END} '{process_name}' stopped")
             return True
         except Exception as err:
             raise ValueError(
@@ -91,7 +95,9 @@ class ProgramProcess(BaseUtils, dict):
             )
 
     def __init__(self, pc: dict):
+        logger.info("Initializing ProgramProcess")
         if pc is None:
+            logger.error("Null parameter in constructor")
             raise ValueError(self.ERROR + " Null parameter in constructor")
         self["_process"] = None
         self.addDataProcess(pc)

@@ -1,3 +1,4 @@
+from Logger import LOGGER as logger
 from Program import Program
 from Program.BaseUtils import BaseUtils
 
@@ -9,6 +10,7 @@ class TaskMaster(BaseUtils):
 
         programs_config = config.get("programs", {})
         if not programs_config:
+            logger.error("No programs defined in configuration")
             raise ValueError("No programs defined in configuration")
 
         for k, v in programs_config.items():
@@ -20,11 +22,13 @@ class TaskMaster(BaseUtils):
 
     def startProcess(self, process_name: str):
         if process_name not in self.programs:
+            logger.error(f"Process {process_name} does not exist")
             raise ValueError(self.ERROR + " The process name does not exist")
         self.programs[process_name].startProcess()
 
     def stopProcess(self, process_name: str):
         if process_name not in self.programs:
+            logger.error(f"Process {process_name} does not exist")
             raise ValueError(self.ERROR + " The process name does not exist")
         self.programs[process_name].stopProcess()
 
