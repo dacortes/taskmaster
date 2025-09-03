@@ -2,6 +2,7 @@ import copy
 import os
 import subprocess
 import time
+import signal
 
 from Logger import LOGGER as logger
 from Program.BaseUtils import BaseUtils
@@ -9,6 +10,51 @@ from Program.ProgramConfig import ProgramConfig
 
 
 class ProgramProcess(BaseUtils, dict):
+    """
+    ProgramProcess is a class for managing and controlling multiple subprocesses with advanced configuration options.
+    Inherits from:
+        BaseUtils, dict
+    Args:
+        pc (dict): Dictionary containing process configuration parameters.
+    Raises:
+        ValueError: If the input configuration dictionary is None or if process initialization/stopping fails.
+    Attributes:
+        _num_proc (int): Number of processes to manage.
+        _processes (dict): Dictionary holding information about each managed process.
+        _command (list): Command to execute for the subprocess.
+        _working_directory (str): Working directory for the subprocess.
+        _use_shell (bool): Whether to use shell for subprocess execution.
+        _max_restarts (int): Maximum number of allowed restarts for a process.
+        _success_timeout (float): Timeout to consider a process as successfully started.
+        _restart_policy (str): Policy for restarting processes ("always", "unexpected", "never").
+        _start_at_launch (bool): Whether to start processes automatically at launch.
+        _expected_exit_codes (list): List of exit codes considered as expected.
+        _env (dict): Environment variables for the subprocess.
+        _preexec_fn (callable): Function to execute in the child process before running the command.
+        _stop_timeout (float): Timeout for stopping a process.
+        _stop_signal (signal): Signal used to stop a process.
+    Methods:
+        printContent(data): Prints the content of the process configuration.
+        addDataProcess(data): Adds process configuration data to the instance.
+        _initRedirectionFile(num_proc, name_file, index): Initializes file redirection for process output.
+        _initProcess(name_proc, index): Initializes a single subprocess and stores its metadata.
+        _createProcess(): Creates and starts all configured subprocesses.
+        _getStopSignal(): Retrieves the signal to use for stopping processes.
+        _stopSingleProcess(process): Stops a single subprocess, force kills if timeout is exceeded.
+        _stopAllProcess(): Stops all managed subprocesses.
+        _getProcess(index=None, pid=None): Retrieves process information by index or PID.
+        _restartProcessIfNeeded(index): Restarts a process if needed based on the restart policy.
+        startProcess(): Starts processes based on the configuration.
+        stopProcess(index=None, pid=None): Stops a specific process or all processes based on configuration.
+    """
+
+    def __init__(self, pc: dict):
+        if pc is None:
+            raise ValueError(self.ERROR + " Null parameter in constructor")
+        self.addDataProcess(pc)
+        self._num_proc = self.get("processes")
+        self.printContent(self.items())
+
     def printContent(self, data):
         for key, value in data:
             logger.debug(
@@ -19,86 +65,165 @@ class ProgramProcess(BaseUtils, dict):
         for proc, cont in data.items():
             self[proc] = copy.deepcopy(cont)
 
-    def startProcess(self):
-        logger.info(f"Starting process: {self['name']}")
-        process_name = self["name"]
-        command = self.get("command").split()
-        working_directory = self.get("working_dir", None)
-        if working_directory:
-            working_directory = os.path.expanduser(working_directory)
-        else:
-            working_directory = None
-        logger.debug(working_directory)
-        env = os.environ.copy()
-        if "env" in self:
-            env.update(self["env"])
-
+    @staticmethod
+    def _initRedirectionFile(num_proc, name_file, index):
+        file_output = name_file
+        if num_proc > 1:
+            base, ext = os.path.splitext(file_output)
+            file_output = f"{base}{index}{ext}"
+        file_output = open(os.path.expanduser(file_output), "a")
+        return file_output
+    
+    def _initProcess(self, name_proc, index) -> dict:
+        curr_name = f"{name_proc}" + (f"{index}" if self._num_proc > 1 else "")
+        new_process = {}
         stdout = subprocess.PIPE
         stderr = subprocess.PIPE
-        if self.get("stdout", ""):
-            stdout = open(os.path.expanduser(self["stdout"]), "a")
-        if self.get("stderr", ""):
-            stderr = open(os.path.expanduser(self["stderr"]), "a")
-
+        if self.get("discard_output", False):
+            stdout = subprocess.DEVNULL
+            stderr = subprocess.DEVNULL
+        else:
+            if self.get("stdout", ""):
+                stdout = self._initRedirectionFile(self._num_proc, self["stdout"], index)
+            if self.get("stderr", ""):
+                stderr = self._initRedirectionFile(self._num_proc, self["stderr"], index)
         try:
             process = subprocess.Popen(
-                command,
-                cwd=working_directory,
-                env=env,
+                self._command,
+                cwd=self._working_directory,
+                env=self._env,
                 stdout=stdout,
                 stderr=stderr,
-                shell=self.get("shell", False),
-                preexec_fn=os.setsid if self.get("umask") else None,
+                shell=self._use_shell,
+                preexec_fn=self._preexec_fn,
             )
-            self["_process"] = process
-            self["_pid"] = process.pid
-            self["_status"] = "running"
-            self[
-                "_start_time"
-            ] = time.time()  # cambiar por el del parametro solo para prueba
-            logger.debug(
-                f"{self.GREEN}{self.LIGTH}Process{self.END} '{process_name}' initialized (PID: {process.pid})"
-            )
-
+            new_process["_popen"] = process
+            new_process['_pid'] = process.pid
+            new_process["_status"] = "running"
+            new_process["_start_time"] = time.time()
+            new_process["_restarts"] = 0
+            if time.time() - new_process["_start_time"] > self._success_timeout:
+                new_process["_successful"] = True
+            else:
+                new_process["_successful"] = False
+            logger.debug(f"{self.GREEN}{self.LIGTH}Process{self.END} '{curr_name}' initialized (PID: {process.pid})")
         except Exception as err:
-            raise ValueError(
-                self.ERROR
-                + " in process initialization "
-                + process_name
-                + ":"
-                + str(err)
-            )
+            raise ValueError(f"{self.ERROR} in process initialization {curr_name}: {err}")
+        return new_process
 
-    def stopProcess(self):
-        process_name = self["name"]
-        if self["_process"] is None:
-            raise ValueError(
-                self.ERROR + "Process" + process_name + "it is not running"
-            )
-        process = self["_process"]
+    def _createProcess(self):
+        self._command = self.get("command", "").split()
+        self._working_directory = self.get("working_dir", None)
+        self._use_shell = self.get("shell", True)
 
+        self._max_restarts = self.get("max_restarts")
+        self._success_timeout = self.get("success_timeout")
+        self._restart_policy = self.get("restart_policy")
+        self._start_at_launch = self.get("start_at_launch")
+        self._expected_exit_codes = self.get("expected_exit_codes")
+
+        if self._working_directory:
+            self._working_directory = os.path.expanduser(self._working_directory)
+        else:
+            self._working_directory = None
+        
+        self._env = os.environ.copy()
+        if "env" in self:
+            self._env.update(self["env"])
+
+        self._preexec_fn = None
+        if "umask" in self:
+            umask_val = self["umask"]
+            self._preexec_fn = lambda: os.umask(umask_val)
+
+        self._processes = {}
+        for new in range(self._num_proc):
+            self._processes[new + 1] = self._initProcess(name_proc=self["name"], index=new + 1)
+
+    def _getStopSignal(self):
+        signal_name = self.get("stop_signal")
+        return getattr(signal, signal_name, signal.SIGTERM)
+
+    def _stopSingleProcess(self, process):
+        os.kill(process.pid, self._stop_signal)
         try:
-            process.terminate()
-            try:
-                process.wait(timeout=5)
-            except Exception as e:
-                process.kill()
-                process.wait()
-                raise e
-            self["_status"] = "stopped"
-            self["_stop_time"] = time.time()  # lo mismo que arriba loco
-            logger.warning(f"{self.YELLOW} Process {self.END} '{process_name}' stopped")
-            return True
-        except Exception as err:
-            raise ValueError(
-                self.ERROR + " stopping process: " + process_name + ":" + err
-            )
+            process.wait(timeout=self._stop_timeout)
+        except subprocess.TimeoutExpired:
+            os.kill(process.pid, signal.SIGKILL)
+            process.wait()
+            logger.warning(f"{self.YELLOW}Process '{process.pid}' force killed with SIGKILL after timeout{self.END}")
 
-    def __init__(self, pc: dict):
-        logger.info("Initializing ProgramProcess")
-        if pc is None:
-            logger.error("Null parameter in constructor")
-            raise ValueError(self.ERROR + " Null parameter in constructor")
-        self["_process"] = None
-        self.addDataProcess(pc)
-        self.printContent(self.items())
+    def _stopAllProcess(self):
+        for new in range(self._num_proc):
+            if (new + 1) in self._processes:
+                process = self._processes[new + 1]["_popen"]
+                try:
+                    self._stopSingleProcess(process)
+                    self._processes[new + 1]["_status"] = "stopped"
+                    self._processes[new + 1]["_exit_code"] = process.returncode
+                    self._processes[new + 1]["stop_time"] = time.time()
+                    self._processes[new + 1]["_stop_signal_used"] = self._stop_timeout
+                    logger.debug(f"{self.YELLOW} Process {self.END} program index:{new + 1} -- pid:{self._processes[new + 1]['_pid']} {self.RED}{self.LIGTH}stopped{self.END}")
+                except Exception as err:
+                    raise ValueError(f"{self.ERROR} stopping process: {self._processes[new + 1]['_pid']}: {err}")
+    
+    def _getProcess(self, index=None, pid=None):
+        for idx in range(self._num_proc):
+            if ((idx + 1) in self._processes and (idx + 1) == index):
+                return self._processes[idx + 1]
+            if pid in self._processes[idx + 1]:
+                return self._processes[idx + 1]
+        logger.warning(f"process not found")
+        return None
+
+    def _restartProcessIfNeeded(self, index):
+        proc_info = self._processes[index]
+        exit_code = proc_info["_popen"].poll()
+        if exit_code is None:
+            return
+        runtime = time.time() - proc_info["_start_time"]
+        restart_needed = False
+
+        if self._restart_policy == "always":
+            restart_needed = True
+        elif self._restart_policy == "unexpected" and exit_code not in self._expected_exit_codes:
+            restart_needed = True
+        elif self._restart_policy == "never":
+            restart_needed = False
+        if restart_needed:
+            restarts = proc_info.get("_restarts", 0)
+            if restarts < self._max_restarts:
+                logger.info(f"{self.YELLOW}Restarting process index {index}...{self.END}")
+                self._processes[index] = self._initProcess(
+                    name_proc=self["name"], index=index
+                )
+                self._processes[index]["_restarts"] = restarts + 1
+            else:
+                logger.info(f"{self.RED}Max restarts reached for process index {index}{self.END}")
+    
+    def startProcess(self):
+        start_at_launch = self.get("start_at_launch")
+        if start_at_launch:
+            self._createProcess()
+        else:
+            logger.info(f"{self.YELLOW}Skipping auto-start for process: {self['name']}{self.END}")
+    
+    def stopProcess(self, index=None, pid=None):
+        self._stop_timeout = self.get("stop_timeout")
+        self._stop_signal = self._getStopSignal()
+
+        if index or pid:
+            stop = self._getProcess(index, pid)
+            try:
+                process = stop["_popen"]
+                self._stopSingleProcess(process)
+                stop["_status"] = "stopped"
+                stop["_exit_code"] = process.returncode
+                stop["stop_time"] = time.time()
+                stop["_stop_signal_used"] = self._stop_timeout
+                logger.info(f"{self.YELLOW} Process {self.END} program index:{index} -- pid:{self._processes[index]['_pid']}' {self.RED}{self.LIGTH}stopped{self.END}")
+            except Exception as err:
+                    raise ValueError(f"{self.ERROR} stopping process: {stop['_pid']}: {err}")
+
+        elif self["start_at_launch"]:
+            self._stopAllProcess()
