@@ -163,7 +163,7 @@ class ProgramProcess(BaseUtils, dict):
                     self._processes[new + 1]["_exit_code"] = process.returncode
                     self._processes[new + 1]["stop_time"] = time.time()
                     self._processes[new + 1]["_stop_signal_used"] = self._stop_timeout
-                    logger.debug(f"{self.YELLOW} Process {self.END} program index:{new + 1} -- pid:{self._processes[new + 1]["_pid"]}' {self.RED}{self.LIGTH}stopped{self.END}")
+                    logger.debug(f"{self.YELLOW} Process {self.END} program index:{new + 1} -- pid:{self._processes[new + 1]['_pid']} {self.RED}{self.LIGTH}stopped{self.END}")
                 except Exception as err:
                     raise ValueError(f"{self.ERROR} stopping process: {self._processes[new + 1]["_pid"]}: {err}")
     
