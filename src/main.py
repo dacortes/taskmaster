@@ -3,15 +3,14 @@ import os
 
 import yaml
 
+from Constants import CONFIG_PATH
+from Logger import LOGGER as logger
 from Program.Program import Program
 from Program.ProgramConfig.ProgramConfig import ProgramConfig
 from TaskMaster import TaskMaster
 
-# from Program.ProgramProcess import ProgramProcess
-CONFIG_PATH = os.getenv("CONFIG_PATH", "../configs/")
 
-
-def test():
+def example():
     import os
     import tempfile
 
@@ -56,7 +55,7 @@ def get_args():
     )
     parser.add_argument(
         "-c",
-        "--config",
+        "--config-file",
         type=str,
         required=True,
         help="Path to the configuration file",
@@ -64,29 +63,30 @@ def get_args():
     return parser.parse_args()
 
 
-def get_yaml(path: str) -> dict:
+def get_yaml(file: str) -> dict:
     """
     Load a YAML file and return its contents as a dictionary.
 
-    :param path: The path to the YAML file, uses CONFIG_PATH env to find it.
+    :param file: The file name, uses CONFIG_PATH env to find it.
     :return: The contents of the YAML file as a dictionary.
     """
-    if not (path.endswith(".yaml") or path.endswith(".yml")):
-        if os.path.exists(CONFIG_PATH + path + ".yaml"):
-            path += ".yaml"
-        elif os.path.exists(CONFIG_PATH + path + ".yml"):
-            path += ".yml"
-    with open(CONFIG_PATH + path, "r") as f:
+    logger.debug(f"Loading YAML file: {file}")
+    if not (file.endswith(".yaml") or file.endswith(".yml")):
+        if os.path.exists(CONFIG_PATH + file + ".yaml"):
+            file += ".yaml"
+        elif os.path.exists(CONFIG_PATH + file + ".yml"):
+            file += ".yml"
+    with open(CONFIG_PATH + file, "r") as f:
         return yaml.safe_load(f)
 
 
 def get_tm(args):
-    yaml = get_yaml(args.config)
+    yaml = get_yaml(args.config_file)
     return TaskMaster(yaml)
 
 
 if __name__ == "__main__":
-    # test()
+    # example()
     args = get_args()
     tm = get_tm(args)
     tm.startProcess("ls")

@@ -1,9 +1,12 @@
 from pathlib import Path
 from typing import Any, Iterator, List, Tuple
 
+from Logger import LOGGER as logger
+
 
 class ProgramConfig(dict):
     def __init__(self, program_config: dict):
+        logger.info("Initializing ProgramConfig")
         super().__init__()
         self.program_config = program_config
         self._load_config()
@@ -46,11 +49,13 @@ class ProgramConfig(dict):
         # Command and process settings
         self["name"] = self.program_config.get("name", None)
         if not self["name"]:
+            logger.error("Missing required config key: name")
             raise ValueError("Missing required config key: name")
         self["command"] = self.program_config.get(
             "command", self.program_config.get("cmd", None)
         )
         if not self["command"]:
+            logger.error("Missing required config key: command")
             raise ValueError("Missing required config key: command")
         self["processes"] = int(self.program_config.get("processes", 1))
         self["start_at_launch"] = bool(
@@ -74,6 +79,7 @@ class ProgramConfig(dict):
         self["stderr"] = self.program_config.get("stderr", None)
         self["discard_output"] = bool(self.program_config.get("discard_output", False))
         if self["discard_output"] and (self["stdout"] or self["stderr"]):
+            logger.error("Cannot discard output if stdout or stderr are set in config")
             raise ValueError("Cannot discard output if stdout or stderr are set")
 
         # Environment & execution context
@@ -82,6 +88,8 @@ class ProgramConfig(dict):
         }
         self["working_dir"] = self.program_config.get("working_dir", str(Path.cwd()))
         self["umask"] = self.program_config.get("umask", "022")
+
+        logger.info("ProgramConfig initialized correctly")
 
     def __getitem__(self, key: str) -> Any:
         return super().__getitem__(key)
@@ -139,4 +147,4 @@ if __name__ == "__main__":
 
     # Load the config
     cfg = ProgramConfig(config_data)
-    print(cfg)
+    logger.info(cfg)

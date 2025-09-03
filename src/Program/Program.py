@@ -1,9 +1,11 @@
+from Logger import LOGGER as logger
 from Program.ProgramConfig.ProgramConfig import ProgramConfig
 from Program.ProgramProcess.ProgramProcess import ProgramProcess
 
 
 class Program:
     def __init__(self, dict: dict = None):
+        logger.debug(f"Initializing Program with config: {dict}")
         self.program_config = ProgramConfig(dict)
         self.process = ProgramProcess(self.program_config)
         # self.process = ProgramProcess(dict)
