@@ -5,7 +5,7 @@ import yaml
 
 from Constants import CONFIG_PATH
 from Logger import LOGGER as logger
-from TaskMaster import TaskMaster
+from Terminal import Terminal
 
 
 def get_args():
@@ -22,31 +22,33 @@ def get_args():
     return parser.parse_args()
 
 
-def get_yaml(file: str) -> dict:
+def get_config(file: str) -> dict:
     """
     Load a YAML file and return its contents as a dictionary.
 
-    :param file: The file name, uses CONFIG_PATH env to find it.
-    :return: The contents of the YAML file as a dictionary.
+    :param file: File name or absolute path. If relative, uses CONFIG_PATH.
+    :return: Contents of the YAML file as a dictionary.
     """
     logger.debug(f"Loading YAML file: {file}")
-    if not (file.endswith(".yaml") or file.endswith(".yml")):
-        if os.path.exists(CONFIG_PATH + file + ".yaml"):
-            file += ".yaml"
-        elif os.path.exists(CONFIG_PATH + file + ".yml"):
-            file += ".yml"
-    with open(CONFIG_PATH + file, "r") as f:
+
+    if not os.path.isabs(file):
+        if not (file.endswith(".yaml") or file.endswith(".yml")):
+            if os.path.exists(os.path.join(CONFIG_PATH, file + ".yaml")):
+                file += ".yaml"
+            elif os.path.exists(os.path.join(CONFIG_PATH, file + ".yml")):
+                file += ".yml"
+        file = os.path.join(CONFIG_PATH, file)
+
+    with open(file, "r") as f:
         return yaml.safe_load(f)
 
 
-def get_tm(args):
-    yaml = get_yaml(args.config_file)
-    return TaskMaster(yaml)
+def main():
+    args = get_args()
+    config = get_config(args.config_file)
+    terminal = Terminal(config)
+    terminal.run()
 
 
 if __name__ == "__main__":
-    args = get_args()
-    tm = get_tm(args)
-    tm.startProcess("ls")
-    tm.stopProcess("ls")
-    # print(tm)
+    main()

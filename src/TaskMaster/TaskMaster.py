@@ -20,6 +20,10 @@ class TaskMaster(BaseUtils):
                 v["name"] = k
             self.programs[v["name"]] = Program(v)
 
+    def tick(self):
+        # Call tick on all managed programs, this is our checker
+        logger.info("Tick")
+
     def startProcess(self, process_name: str):
         if process_name not in self.programs:
             logger.error(f"Process {process_name} does not exist")

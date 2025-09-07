@@ -16,7 +16,7 @@ class Program:
     def stopProcess(self):
         try:
             self.process.stopProcess(index=0)
-        except Exception as err:
+        except Exception:
             None
 
     def __getitem__(self, key):
