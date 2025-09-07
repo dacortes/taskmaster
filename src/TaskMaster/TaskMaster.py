@@ -1,7 +1,8 @@
 from Logger import LOGGER as logger
 from Program import Program
 from Program.BaseUtils import BaseUtils
-
+import threading
+import time
 
 class TaskMaster(BaseUtils):
     def __init__(self, config: dict):
@@ -19,6 +20,17 @@ class TaskMaster(BaseUtils):
             if "name" not in v:
                 v["name"] = k
             self.programs[v["name"]] = Program(v)
+        self._num_proc = len(self.programs)
+        self.monitorProcesses()
+
+    def monitorProcesses(self):
+        def monitor():
+            while True:
+                for program in self.programs.values():
+                    program.Restart()
+                time.sleep(1)
+        thread = threading.Thread(target=monitor, daemon=True)
+        thread.start()
 
     def startProcess(self, process_name: str):
         if process_name not in self.programs:

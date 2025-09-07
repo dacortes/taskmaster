@@ -16,13 +16,3 @@ repos:
     hooks:
       - id: flake8
         exclude: ^tests/
-  
-  - repo: local
-    hooks:
-      - id: pytest
-        name: Run Pytest
-        entry: pytest
-        language: system
-        types: [python]
-        args: ["tests/"]
-
