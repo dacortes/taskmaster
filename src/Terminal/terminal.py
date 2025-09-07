@@ -39,16 +39,17 @@ class InteractiveTerminal:
         first_prompt = True
 
         while self.running:
-            self.input = self._timed_input(timeout=1, show_prompt=first_prompt)
-            first_prompt = False
-            if self.input is not None:
-                # Got an input line, need to print prompt next time
-                first_prompt = True
-                self._parse_input()
-                self._dispatch()
+            try:
+                self.input = self._timed_input(timeout=1, show_prompt=first_prompt)
+                first_prompt = False
+                if self.input is not None:
+                    # Got an input line, need to print prompt next time
+                    first_prompt = True
+                    self._parse_input()
+                    self._dispatch()
 
-            # Call tick every second
-            self.tm.tick()
+            except (KeyboardInterrupt, EOFError):
+                    self._cmd_quit() 
 
     def _timed_input(self, timeout=1, show_prompt=False):
         """Return input if available within `timeout` seconds, else None."""

@@ -225,6 +225,10 @@ class ProgramProcess(BaseUtils, dict):
                     f"{self.RED}Max restarts reached for process index {index}{self.END}"
                 )
 
+    def Restart(self):
+        for index in range(self._num_proc):
+            self._restartProcessIfNeeded(index)
+
     def startProcess(self):
         start_at_launch = self.get("start_at_launch")
         if start_at_launch:
