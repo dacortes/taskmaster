@@ -49,7 +49,7 @@ class InteractiveTerminal:
                     self._dispatch()
 
             except (KeyboardInterrupt, EOFError):
-                    self._cmd_quit() 
+                self._cmd_quit()
 
     def _timed_input(self, timeout=1, show_prompt=False):
         """Return input if available within `timeout` seconds, else None."""
