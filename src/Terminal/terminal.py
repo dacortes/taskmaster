@@ -23,14 +23,15 @@ class InteractiveTerminal:
             "help": self._cmd_help,
         }
         self.commands_help = {
-            "status": "Show the status of all managed programs.",
-            "start": "Start a specific program or all programs.",
-            "stop": "Stop a specific program or all programs.",
-            "restart": "Restart a specific program or all programs.",
-            "reload": "Reload the configuration file.",
-            "quit/exit": "Exit the terminal interface.",
-            "help": "Show the help message.",
+            "status": "status <program_name> [process_id]\n    Show the status of a specific program (optionally for a given process ID).",
+            "start": "start <program_name>\n    Start a specific program.",
+            "stop": "stop <program_name> [index]\n    Stop a specific program (optionally one process by index).",
+            "restart": "restart [program_name]\n    Restart a specific program, or all programs if none is specified.",
+            "reload": "reload\n    Reload the configuration file.",
+            "quit/exit": "quit | exit\n    Exit the terminal interface.",
+            "help": "help\n    Show this help message.",
         }
+
         self.cmd = None
         self.input = None
         self.cmd_options = []
@@ -91,19 +92,24 @@ class InteractiveTerminal:
             print(f"No help available for '{self.cmd_options[0]}'")
 
     def _cmd_status(self):
-        print("[Status] Program is running (stub).")
+        process_name = self.cmd_options[0] if self.cmd_options else None
+        self.tm.getStatus(process_name)
 
     def _cmd_start(self):
-        print("[Start] Starting program (stub).")
+        process_name = self.cmd_options[0] if self.cmd_options else None
+        self.tm.startProcess(process_name)
 
     def _cmd_stop(self):
-        print("[Stop] Stopping program (stub).")
+        process_name = self.cmd_options[0] if self.cmd_options else None
+        index = int(self.cmd_options[1]) if len(self.cmd_options) > 1 else None
+        self.tm.stopProcess(process_name, index)
 
     def _cmd_restart(self):
-        print("[Restart] Restarting program (stub).")
+        process_name = self.cmd_options[0] if self.cmd_options else None
+        self.tm.restartProcess(process_name)
 
     def _cmd_reload(self):
-        print("[Reload] Reloading config (stub).")
+        self.tm.reloadConfig()
 
     def _cmd_quit(self):
         print("[Quit] Exiting program.")

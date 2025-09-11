@@ -24,7 +24,8 @@ class TaskMaster(BaseUtils):
                 self.programs[v["name"]] = Program(v)
             except Exception as e:
                 logger.error(
-                    f"Error initializing program {v['name']}: {e}", exc_info=True
+                    f"Error initializing program {v['name']}: {e}",
+                    exc_info=True,
                 )
         self._num_proc = len(self.programs)
         self.monitorProcesses()
@@ -34,7 +35,7 @@ class TaskMaster(BaseUtils):
             while True:
                 try:
                     for program in self.programs.values():
-                        program.Restart()
+                        program.restartProcess()
                 except Exception as e:
                     logger.error(e, exc_info=True)
                 time.sleep(1)
@@ -42,17 +43,33 @@ class TaskMaster(BaseUtils):
         thread = threading.Thread(target=monitor, daemon=True)
         thread.start()
 
+    def getStatus(self, program_name: str, process_id: int = None):
+        if program_name not in self.programs:
+            raise ValueError(f"The process {program_name} does not exist")
+        logger.info(f"Getting status for program '{program_name}'")
+        self.programs[program_name].getStatus(process_id)
+
     def startProcess(self, process_name: str):
         if process_name not in self.programs:
-            logger.error(f"Process {process_name} does not exist")
-            raise ValueError(self.ERROR + " The process name does not exist")
+            raise ValueError(f"The process {process_name} does not exist")
+        logger.info(f"Starting process '{process_name}'")
         self.programs[process_name].startProcess()
 
-    def stopProcess(self, process_name: str):
+    def stopProcess(self, process_name: str, index: int = None):
         if process_name not in self.programs:
-            logger.error(f"Process {process_name} does not exist")
-            raise ValueError(self.ERROR + " The process name does not exist")
-        self.programs[process_name].stopProcess()
+            raise ValueError(f"The process {process_name} does not exist")
+        logger.info(f"Stopping process '{process_name}'")
+        self.programs[process_name].stopProcess(index)
+
+    def restartProcess(self, process_name: str = None):
+        if process_name and process_name not in self.programs:
+            raise ValueError(f"The process {process_name} does not exist")
+        logger.info(f"Restarting process '{process_name}'")
+        self.programs[process_name].restartProcess()
+
+    def reloadConfig(self):
+        logger.info("Reloading configuration (stub).")
+        pass
 
     def __repr__(self):
         return (
