@@ -14,16 +14,10 @@ class Program:
         self._process.startProcess()
 
     def stopProcess(self):
-        try:
-            self._process.stopProcess(index=0)
-        except Exception:
-            None
+        self._process.stopProcess(index=0)
 
     def Restart(self):
-        try:
-            self._process.Restart()
-        except Exception:
-            None
+        self._process.Restart()
 
     def __getitem__(self, key):
         return self._process[key]

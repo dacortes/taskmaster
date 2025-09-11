@@ -32,8 +32,11 @@ class TaskMaster(BaseUtils):
     def monitorProcesses(self):
         def monitor():
             while True:
-                for program in self.programs.values():
-                    program.Restart()
+                try:
+                    for program in self.programs.values():
+                        program.Restart()
+                except Exception as e:
+                    logger.error(e, exc_info=True)
                 time.sleep(1)
 
         thread = threading.Thread(target=monitor, daemon=True)
