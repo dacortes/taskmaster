@@ -1,8 +1,10 @@
+import threading
+import time
+
 from Logger import LOGGER as logger
 from Program import Program
 from Program.BaseUtils import BaseUtils
-import threading
-import time
+
 
 class TaskMaster(BaseUtils):
     def __init__(self, config: dict):
@@ -11,7 +13,6 @@ class TaskMaster(BaseUtils):
 
         programs_config = config.get("programs", {})
         if not programs_config:
-            logger.error("No programs defined in configuration")
             raise ValueError("No programs defined in configuration")
 
         for k, v in programs_config.items():
@@ -19,30 +20,61 @@ class TaskMaster(BaseUtils):
             # we assign name using the key in the list of dicts
             if "name" not in v:
                 v["name"] = k
-            self.programs[v["name"]] = Program(v)
+            try:
+                self.programs[v["name"]] = Program(v)
+            except Exception as e:
+                logger.error(
+                    f"Error initializing program {v['name']}: {e}",
+                    exc_info=True,
+                )
         self._num_proc = len(self.programs)
-        self.monitorProcesses()
+        # self.monitorProcesses()
 
     def monitorProcesses(self):
         def monitor():
             while True:
-                for program in self.programs.values():
-                    program.Restart()
+                try:
+                    for program in self.programs.values():
+                        program.restartProcess()
+                except Exception as e:
+                    logger.error(e, exc_info=True)
                 time.sleep(1)
+
         thread = threading.Thread(target=monitor, daemon=True)
         thread.start()
 
+    def getStatus(self, program_name: str = None, process_id: int = None):
+        if program_name is None:
+            logger.info("Getting status for all programs")
+            for name, program in self.programs.items():
+                program.getStatus(process_id)
+        else:
+            if program_name not in self.programs:
+                raise ValueError(f"The process {program_name} does not exist")
+            logger.info(f"Getting status for program '{program_name}'")
+            self.programs[program_name].getStatus(process_id)
+
     def startProcess(self, process_name: str):
         if process_name not in self.programs:
-            logger.error(f"Process {process_name} does not exist")
-            raise ValueError(self.ERROR + " The process name does not exist")
+            raise ValueError(f"The process {process_name} does not exist")
+        logger.info(f"Starting process '{process_name}'")
         self.programs[process_name].startProcess()
 
-    def stopProcess(self, process_name: str):
+    def stopProcess(self, process_name: str, index: int = None):
         if process_name not in self.programs:
-            logger.error(f"Process {process_name} does not exist")
-            raise ValueError(self.ERROR + " The process name does not exist")
-        self.programs[process_name].stopProcess()
+            raise ValueError(f"The process {process_name} does not exist")
+        logger.info(f"Stopping process '{process_name}'")
+        self.programs[process_name].stopProcess(index)
+
+    def restartProcess(self, process_name: str = None):
+        if process_name and process_name not in self.programs:
+            raise ValueError(f"The process {process_name} does not exist")
+        logger.info(f"Restarting process '{process_name}'")
+        self.programs[process_name].restartProcess()
+
+    def reloadConfig(self):
+        logger.info("Reloading configuration (stub).")
+        pass
 
     def __repr__(self):
         return (
