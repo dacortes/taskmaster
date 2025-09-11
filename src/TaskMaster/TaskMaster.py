@@ -23,7 +23,9 @@ class TaskMaster(BaseUtils):
             try:
                 self.programs[v["name"]] = Program(v)
             except Exception as e:
-                logger.error(f"Error initializing program {v['name']}: {e}")
+                logger.error(
+                    f"Error initializing program {v['name']}: {e}", exc_info=True
+                )
         self._num_proc = len(self.programs)
         self.monitorProcesses()
 
