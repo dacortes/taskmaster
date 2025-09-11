@@ -16,7 +16,7 @@ class Program:
     def startProcess(self):
         self._process.startProcess()
 
-    def stopProcess(self, index):
+    def stopProcess(self, index=None):
         self._process.stopProcess(index)
 
     def restartProcess(self):
