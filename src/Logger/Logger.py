@@ -9,7 +9,7 @@ from .LastFrameFormatter import LastFrameFormatter
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
-log_string = "[%(asctime)-19s] [%(filename)-20s%(funcName)-20s%(lineno)-4d] %(levelname)-7s - %(message)s"
+log_string = "[%(asctime)-19s] [%(filename)-20s %(funcName)-20s %(lineno)-4d] %(levelname)-7s - %(message)s"
 datefmt = "%Y-%m-%d %H:%M:%S"
 
 
