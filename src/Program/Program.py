@@ -8,7 +8,7 @@ class Program:
         logger.debug(f"Initializing Program with config: {dict}")
         self._program_config = ProgramConfig(dict)
         self._process = ProgramProcess(self._program_config)
-        # self._process = ProgramProcess(dict)
+        self.startProcess()
 
     def startProcess(self):
         self._process.startProcess()
