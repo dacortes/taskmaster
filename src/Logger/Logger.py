@@ -11,6 +11,9 @@ from .CleanFormater import CleanFormatter
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
+log_string = "[%(asctime)-19s] [%(filename)-20s%(funcName)-20s%(lineno)-4d] %(levelname)-7s - %(message)s"
+datefmt = "%Y-%m-%d %H:%M:%S"
+
 
 class Logger:
     _loggers = {}
@@ -30,14 +33,10 @@ class Logger:
             file_handler = logging.FileHandler(os.path.join(LOG_DIR, LOG_FILE))
             file_handler.setLevel(LOG_LEVEL)
 
-            formatter = logging.Formatter(
-                "[%(asctime)s] [%(filename)s:%(funcName)s:%(lineno)d] %(levelname)s - %(message)s"
-            )
+            formatter = logging.Formatter(log_string, datefmt=datefmt)
 
             # I don't need ASCII code when writing to a file
-            clean_formatter = CleanFormatter(
-                "[%(asctime)s] [%(filename)s:%(funcName)s:%(lineno)d] %(levelname)s - %(message)s"
-            )
+            clean_formatter = CleanFormatter(log_string, datefmt=datefmt)
             stream_handler.setFormatter(formatter)
             file_handler.setFormatter(clean_formatter)
 
