@@ -28,7 +28,7 @@ class TaskMaster(BaseUtils):
                     exc_info=True,
                 )
         self._num_proc = len(self.programs)
-        self.monitorProcesses()
+        # self.monitorProcesses()
 
     def monitorProcesses(self):
         def monitor():
@@ -43,11 +43,16 @@ class TaskMaster(BaseUtils):
         thread = threading.Thread(target=monitor, daemon=True)
         thread.start()
 
-    def getStatus(self, program_name: str, process_id: int = None):
-        if program_name not in self.programs:
-            raise ValueError(f"The process {program_name} does not exist")
-        logger.info(f"Getting status for program '{program_name}'")
-        self.programs[program_name].getStatus(process_id)
+    def getStatus(self, program_name: str = None, process_id: int = None):
+        if program_name is None:
+            logger.info("Getting status for all programs")
+            for name, program in self.programs.items():
+                program.getStatus(process_id)
+        else:
+            if program_name not in self.programs:
+                raise ValueError(f"The process {program_name} does not exist")
+            logger.info(f"Getting status for program '{program_name}'")
+            self.programs[program_name].getStatus(process_id)
 
     def startProcess(self, process_name: str):
         if process_name not in self.programs:

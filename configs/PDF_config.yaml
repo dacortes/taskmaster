@@ -4,7 +4,7 @@ programs:
     numprocs: 1
     umask: 022
     workingdir: /tmp
-    autostart: true
+    start_at_launch: true
     autorestart: unexpected
     exitcodes:
     - 0
@@ -23,7 +23,6 @@ programs:
     numprocs: 8
     umask: 077
     workingdir: /tmp
-    autostart: true
     autorestart: unexpected
     exitcodes: 0
     startretries: 3
