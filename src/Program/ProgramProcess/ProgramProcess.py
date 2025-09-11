@@ -10,7 +10,6 @@ from Program.ProgramConfig import ProgramConfig
 
 
 class ProgramProcess(BaseUtils, dict):
-
     @staticmethod
     def nothing(obj):
         pass
@@ -21,7 +20,9 @@ class ProgramProcess(BaseUtils, dict):
         if obj.old_num_proc > obj._num_proc:
             for index in range(obj._num_proc, obj.old_num_proc):
                 index += 1
-                logger.info(f"About to destroy process {index} of program {obj['name']} ")
+                logger.info(
+                    f"About to destroy process {index} of program {obj['name']} "
+                )
                 obj.stopProcess(index)
         elif obj.old_num_proc < obj._num_proc:
             for index in range(obj.old_num_proc, obj._num_proc):
@@ -30,10 +31,10 @@ class ProgramProcess(BaseUtils, dict):
                     name_proc=obj["name"], index=index
                 )
 
-
     @staticmethod
     def startUpdate(obj):
         pass
+
     attr_map = {
         "processes": ("_num_proc", processUpdate),
         "start_at_launch": ("_start_at_launch", startUpdate),
@@ -42,7 +43,7 @@ class ProgramProcess(BaseUtils, dict):
         "success_timeout": ("_success_timeout", nothing),
         "max_restarts": ("_max_restarts", nothing),
         "stop_signal": ("_stop_signal", nothing),
-        "stop_timeout": ("_stop_timeout", nothing)
+        "stop_timeout": ("_stop_timeout", nothing),
     }
     """
     ProgramProcess is a class for managing and controlling multiple subprocesses with advanced configuration options.
@@ -101,7 +102,7 @@ class ProgramProcess(BaseUtils, dict):
         for proc, cont in data.items():
             self[proc] = copy.deepcopy(cont)
 
-    def updateProcess(self, data_update: ProgramConfig, no_restart_list :list):
+    def updateProcess(self, data_update: ProgramConfig, no_restart_list: list):
         self.old_num_proc = self._num_proc
         # self._old_start_at_launch = self._start_at_launch
         for idx in range(0, len(no_restart_list)):
@@ -119,7 +120,6 @@ class ProgramProcess(BaseUtils, dict):
             if parameter in self.attr_map:
                 _, update_func = self.attr_map[parameter]
                 update_func(self)
-
 
     @staticmethod
     def _initRedirectionFile(num_proc, name_file, index):
@@ -170,9 +170,7 @@ class ProgramProcess(BaseUtils, dict):
                 f"{self.GREEN}{self.LIGTH}Process{self.END} '{curr_name}' initialized (PID: {process.pid})"
             )
         except Exception as err:
-            raise ValueError(
-                f"In process initialization {curr_name}: {err}"
-            )
+            raise ValueError(f"In process initialization {curr_name}: {err}")
         return new_process
 
     def _createProcess(self):

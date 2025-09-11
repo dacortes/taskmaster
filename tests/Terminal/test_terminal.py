@@ -10,6 +10,7 @@ class TestCommand_dispatch(unittest.TestCase):
     def setUp(self):
         # minimal config to initialize the terminal
         self.config = {
+            "file_path": "/tmp/test_config.yaml",
             "programs": {
                 "nginx": {
                     "cmd": "/usr/local/bin/nginx -c /etc/nginx/test.conf",
@@ -27,7 +28,7 @@ class TestCommand_dispatch(unittest.TestCase):
                     "stderr": "/tmp/nginx.stderr",
                     "env": {"STARTED_BY": "taskmaster", "ANSWER": "42"},
                 }
-            }
+            },
         }
 
         self.term = Terminal(self.config)

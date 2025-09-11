@@ -12,7 +12,7 @@ class Program:
 
     def updateProcess(self, ProgramConfig, cmdList):
         self._process.updateProcess(ProgramConfig, cmdList)
-    
+
     def startProcess(self):
         self._process.startProcess()
 
