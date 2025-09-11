@@ -49,13 +49,11 @@ class ProgramConfig(dict):
         # Command and process settings
         self["name"] = self.program_config.get("name", None)
         if not self["name"]:
-            logger.error("Missing required config key: name")
             raise ValueError("Missing required config key: name")
         self["command"] = self.program_config.get(
             "command", self.program_config.get("cmd", None)
         )
         if not self["command"]:
-            logger.error("Missing required config key: command")
             raise ValueError("Missing required config key: command")
         self["processes"] = int(self.program_config.get("processes", 1))
         self["start_at_launch"] = bool(
@@ -79,7 +77,6 @@ class ProgramConfig(dict):
         self["stderr"] = self.program_config.get("stderr", None)
         self["discard_output"] = bool(self.program_config.get("discard_output", False))
         if self["discard_output"] and (self["stdout"] or self["stderr"]):
-            logger.error("Cannot discard output if stdout or stderr are set in config")
             raise ValueError("Cannot discard output if stdout or stderr are set")
 
         # Environment & execution context

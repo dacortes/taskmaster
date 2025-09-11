@@ -1,8 +1,10 @@
+import threading
+import time
+
 from Logger import LOGGER as logger
 from Program import Program
 from Program.BaseUtils import BaseUtils
-import threading
-import time
+
 
 class TaskMaster(BaseUtils):
     def __init__(self, config: dict):
@@ -11,7 +13,6 @@ class TaskMaster(BaseUtils):
 
         programs_config = config.get("programs", {})
         if not programs_config:
-            logger.error("No programs defined in configuration")
             raise ValueError("No programs defined in configuration")
 
         for k, v in programs_config.items():
@@ -19,7 +20,10 @@ class TaskMaster(BaseUtils):
             # we assign name using the key in the list of dicts
             if "name" not in v:
                 v["name"] = k
-            self.programs[v["name"]] = Program(v)
+            try:
+                self.programs[v["name"]] = Program(v)
+            except Exception as e:
+                logger.error(f"Error initializing program {v['name']}: {e}")
         self._num_proc = len(self.programs)
         self.monitorProcesses()
 
@@ -29,6 +33,7 @@ class TaskMaster(BaseUtils):
                 for program in self.programs.values():
                     program.Restart()
                 time.sleep(1)
+
         thread = threading.Thread(target=monitor, daemon=True)
         thread.start()
 

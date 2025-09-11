@@ -2,12 +2,10 @@ import logging
 import os
 import sys
 
-# Add root to the paths so it can access the Constants module even if run from a different directory
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-
 from Constants import APP_NAME, LOG_DIR, LOG_FILE, LOG_LEVEL
 
 from .CleanFormater import CleanFormatter
+from .LastFrameFormatter import LastFrameFormatter
 
 os.makedirs(LOG_DIR, exist_ok=True)
 
@@ -33,7 +31,7 @@ class Logger:
             file_handler = logging.FileHandler(os.path.join(LOG_DIR, LOG_FILE))
             file_handler.setLevel(LOG_LEVEL)
 
-            formatter = logging.Formatter(log_string, datefmt=datefmt)
+            formatter = LastFrameFormatter(log_string, datefmt=datefmt)
 
             # I don't need ASCII code when writing to a file
             clean_formatter = CleanFormatter(log_string, datefmt=datefmt)

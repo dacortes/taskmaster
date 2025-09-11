@@ -44,6 +44,4 @@ class Program:
         return key in self._process
 
     def __repr__(self):
-        return (
-            f"Program(config={self._program_config})"  # TODO ADD SELF.PROCESS PRINT HERE
-        )
+        return f"Program(config={self._program_config})"  # TODO ADD SELF.PROCESS PRINT HERE
