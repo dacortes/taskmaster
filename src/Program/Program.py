@@ -8,22 +8,16 @@ class Program:
         logger.debug(f"Initializing Program with config: {dict}")
         self._program_config = ProgramConfig(dict)
         self._process = ProgramProcess(self._program_config)
-        # self._process = ProgramProcess(dict)
+        self.startProcess()
 
     def startProcess(self):
         self._process.startProcess()
 
     def stopProcess(self):
-        try:
-            self._process.stopProcess(index=0)
-        except Exception:
-            None
+        self._process.stopProcess(index=0)
 
     def Restart(self):
-        try:
-            self._process.Restart()
-        except Exception:
-            None
+        self._process.Restart()
 
     def __getitem__(self, key):
         return self._process[key]
@@ -44,6 +38,4 @@ class Program:
         return key in self._process
 
     def __repr__(self):
-        return (
-            f"Program(config={self._program_config})"  # TODO ADD SELF.PROCESS PRINT HERE
-        )
+        return f"Program(config={self._program_config})"  # TODO ADD SELF.PROCESS PRINT HERE
