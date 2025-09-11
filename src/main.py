@@ -40,12 +40,13 @@ def get_config(file: str) -> dict:
         file = os.path.join(CONFIG_PATH, file)
 
     with open(file, "r") as f:
-        return yaml.safe_load(f)
+        return yaml.safe_load(f), file
 
 
 def main():
     args = get_args()
-    config = get_config(args.config_file)
+    config, file = get_config(args.config_file)
+    config["file_path"] = file
     terminal = Terminal(config)
     terminal.run()
 

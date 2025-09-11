@@ -1,13 +1,21 @@
 programs:
-  ls:
+  patata:
     cmd: "/usr/bin/ls -la"
+    processes: 20
+    start_at_launch: True
+    expected_exit_codes:
+    - 0
+    - 2
+  
+  foo:
+    cmd: "/usr/bin/ls"
     processes: 2
     umask: 022
     workingdir: /tmp
     autostart: true
-    start_at_launch: true
+    start_at_launch: False
     autorestart: unexpected
-    exitcodes:
+    expected_exit_codes:
     - 0
     - 2
     startretries: 3
@@ -19,3 +27,10 @@ programs:
     env:
       STARTED_BY: taskmaster
       ANSWER: 42
+
+  # foo3:
+  #   cmd: "/usr/bin/sleep 20000"
+  #   start_at_launch: true
+  #   workingdir: /tmp
+  #   stdout: /tmp/ls.stdout
+  #   stderr: /tmp/ls.stderr
