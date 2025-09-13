@@ -4,6 +4,7 @@ import os
 import yaml
 
 from Constants import CONFIG_PATH
+from Logger.Logger import Logger
 from Logger import LOGGER as logger
 from Terminal import Terminal
 
@@ -43,8 +44,15 @@ def get_config(file: str) -> dict:
         return yaml.safe_load(f), file
 
 
-def main():
+def main(remote_syslog: tuple = None):
     args = get_args()
+
+    if remote_syslog:
+        active_logger = Logger.get_logger("remote_logger", remote_syslog_server=remote_syslog)
+        active_logger.info("Logger initialized with remote syslog server")
+    else:
+        active_logger = logger  # default global logger
+
     config, file = get_config(args.config_file)
     config["file_path"] = file
     terminal = Terminal(config)
@@ -52,4 +60,5 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(remote_syslog=("127.0.0.1", 5514))
+    # main()
