@@ -71,7 +71,7 @@ class TestProgramConfig(unittest.TestCase):
         self.assertFalse(cfg.discard_output)
         self.assertEqual(cfg.env, {})
         self.assertEqual(cfg.working_dir, str(Path.cwd()))
-        self.assertEqual(cfg.umask, "022")
+        self.assertEqual(cfg.umask, 0o22)
 
     def test_discard_output_conflict(self):
         conflict_data = {

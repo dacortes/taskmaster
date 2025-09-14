@@ -5,6 +5,7 @@ from TaskMaster import TaskMaster
 
 def make_config():
     return {
+        "file_path": "/tmp/test_config.yaml",
         "programs": {
             "nginx": {
                 "cmd": "/usr/local/bin/nginx -c /etc/nginx/test.conf",
@@ -40,7 +41,7 @@ def make_config():
                 "stdout": "/tmp/vgsworker.stdout",
                 "stderr": "/tmp/vgsworker.stderr",
             },
-        }
+        },
     }
 
 
@@ -53,7 +54,7 @@ def test_init_assigns_program_names():
 
 def test_raises_if_no_programs():
     with pytest.raises(ValueError):
-        TaskMaster({"programs": {}})
+        TaskMaster({"file_path": "/tmp/test_config.yaml", "programs": {}})
 
     with pytest.raises(ValueError):
-        TaskMaster({})
+        TaskMaster({"file_path": "/tmp/test_config.yaml", "programs": {}})
