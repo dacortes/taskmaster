@@ -49,7 +49,8 @@ def main():
     logger.info("Starting TaskMaster...")
     try:
         args = get_args()
-        config = get_config(args.config_file)
+        config, file = get_config(args.config_file)
+        config["file_path"] = file
         terminal = Terminal(config)
         terminal.run()
     except BaseException as e:

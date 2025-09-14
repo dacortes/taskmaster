@@ -21,7 +21,6 @@ class TaskMaster(BaseUtils):
         self.new_config = None
         self.programs = {}
         self.file_path = self.config["file_path"]
-        print(self.file_path)
 
         programs_config = self.config.get("programs", {})
         if not programs_config:
