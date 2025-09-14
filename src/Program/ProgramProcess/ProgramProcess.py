@@ -10,6 +10,41 @@ from Program.ProgramConfig import ProgramConfig
 
 
 class ProgramProcess(BaseUtils, dict):
+    @staticmethod
+    def nothing(obj):
+        pass
+
+    @staticmethod
+    def processUpdate(obj):
+        # 5, 3. 5-3 = 2
+        if obj.old_num_proc > obj._num_proc:
+            for index in range(obj._num_proc, obj.old_num_proc):
+                index += 1
+                logger.info(
+                    f"About to destroy process {index} of program {obj['name']} "
+                )
+                obj.stopProcess(index)
+        elif obj.old_num_proc < obj._num_proc:
+            for index in range(obj.old_num_proc, obj._num_proc):
+                index += 1
+                obj._processes[index] = obj._initProcess(
+                    name_proc=obj["name"], index=index
+                )
+
+    @staticmethod
+    def startUpdate(obj):
+        pass
+
+    attr_map = {
+        "processes": ("_num_proc", processUpdate),
+        "start_at_launch": ("_start_at_launch", startUpdate),
+        "restart_policy": ("_restart_policy", nothing),
+        "expected_exit_codes": ("_expected_exit_codes", nothing),
+        "success_timeout": ("_success_timeout", nothing),
+        "max_restarts": ("_max_restarts", nothing),
+        "stop_signal": ("_stop_signal", nothing),
+        "stop_timeout": ("_stop_timeout", nothing),
+    }
     """
     ProgramProcess is a class for managing and controlling multiple subprocesses with advanced configuration options.
     Inherits from:
@@ -53,7 +88,9 @@ class ProgramProcess(BaseUtils, dict):
             raise ValueError(self.ERROR + " Null parameter in constructor")
         self.addDataProcess(pc)
         self._num_proc = self.get("processes")
-        self.printContent(self.items())
+
+    def __del__(self):
+        self.stopProcess()
 
     def printContent(self, data):
         for key, value in data:
@@ -64,6 +101,25 @@ class ProgramProcess(BaseUtils, dict):
     def addDataProcess(self, data: ProgramConfig):
         for proc, cont in data.items():
             self[proc] = copy.deepcopy(cont)
+
+    def updateProcess(self, data_update: ProgramConfig, no_restart_list: list):
+        self.old_num_proc = self._num_proc
+        # self._old_start_at_launch = self._start_at_launch
+        for idx in range(0, len(no_restart_list)):
+            logger.debug(f"{idx} -- {no_restart_list[idx]}")
+            parameter = no_restart_list[idx]
+            self[parameter] = data_update[parameter]
+            if parameter in self.attr_map:
+                private_attr_name, _ = self.attr_map[parameter]
+                setattr(self, private_attr_name, data_update[parameter])
+
+        for idx in range(0, len(no_restart_list)):
+            logger.debug(f"{idx} -- {no_restart_list[idx]}")
+            parameter = no_restart_list[idx]
+            self[parameter] = data_update[parameter]
+            if parameter in self.attr_map:
+                _, update_func = self.attr_map[parameter]
+                update_func(self)
 
     @staticmethod
     def _initRedirectionFile(num_proc, name_file, index):
@@ -114,9 +170,7 @@ class ProgramProcess(BaseUtils, dict):
                 f"{self.GREEN}{self.LIGTH}Process{self.END} '{curr_name}' initialized (PID: {process.pid})"
             )
         except Exception as err:
-            raise ValueError(
-                f"{self.ERROR} in process initialization {curr_name}: {err}"
-            )
+            raise ValueError(f"In process initialization {curr_name}: {err}")
         return new_process
 
     def _createProcess(self):
@@ -143,7 +197,6 @@ class ProgramProcess(BaseUtils, dict):
         if "umask" in self:
             umask_val = self["umask"]
             self._preexec_fn = lambda: os.umask(umask_val)
-
         self._processes = {}
         for new in range(self._num_proc):
             self._processes[new + 1] = self._initProcess(
@@ -184,13 +237,10 @@ class ProgramProcess(BaseUtils, dict):
                     )
 
     def _getProcess(self, index=None, pid=None):
-        for idx in range(self._num_proc):
-            if (idx + 1) in self._processes and (idx + 1) == index:
-                return self._processes[idx + 1]
-            if pid in self._processes[idx + 1]:
-                return self._processes[idx + 1]
-        logger.warning("Process not found")
-        return None
+        proc = self._processes.get(index, None)
+        if proc is None:
+            proc = self._processes.get(pid, None)
+        return proc
 
     def _restartProcessIfNeeded(self, index):
         proc_info = self._processes[index]
@@ -244,6 +294,9 @@ class ProgramProcess(BaseUtils, dict):
 
         if index or pid:
             stop = self._getProcess(index, pid)
+            if stop is None:
+                return
+            logger.debug(stop)
             try:
                 process = stop["_popen"]
                 self._stopSingleProcess(process)

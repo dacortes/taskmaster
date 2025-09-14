@@ -10,6 +10,9 @@ class Program:
         self._process = ProgramProcess(self._program_config)
         self.startProcess()
 
+    def updateProcess(self, ProgramConfig, cmdList):
+        self._process.updateProcess(ProgramConfig, cmdList)
+
     def startProcess(self):
         self._process.startProcess()
 

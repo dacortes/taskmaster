@@ -41,7 +41,7 @@ def get_config(file: str) -> dict:
         file = os.path.join(CONFIG_PATH, file)
 
     with open(file, "r") as f:
-        return yaml.safe_load(f)
+        return yaml.safe_load(f), file
 
 
 def main():

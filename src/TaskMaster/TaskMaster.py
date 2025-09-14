@@ -1,17 +1,29 @@
+import signal
 import threading
 import time
 
+import yaml
+
+from Constants import LIST_NO_RESTART, LIST_RESTART
 from Logger import LOGGER as logger
 from Program import Program
 from Program.BaseUtils import BaseUtils
+from Program.ProgramConfig import ProgramConfig
+
+# import sys
 
 
 class TaskMaster(BaseUtils):
     def __init__(self, config: dict):
+        # Registrar el handler
+        signal.signal(signal.SIGHUP, self.handle_sighup)
         self.config = config
+        self.new_config = None
         self.programs = {}
+        self.file_path = self.config["file_path"]
+        print(self.file_path)
 
-        programs_config = config.get("programs", {})
+        programs_config = self.config.get("programs", {})
         if not programs_config:
             raise ValueError("No programs defined in configuration")
 
@@ -29,6 +41,59 @@ class TaskMaster(BaseUtils):
         self._num_proc = len(self.programs)
         self.monitorProcesses()
 
+    def _get_config(self) -> dict:
+        logger.debug(f"Reloading YAML file: {self.file_path}")
+
+        with open(self.file_path, "r") as f:
+            return yaml.safe_load(f)
+
+    def configCmp(self):
+        old_programs = self.config["programs"]
+        new_programs = self.new_config.get("programs", None)
+
+        if new_programs is None:
+            logger.warning("new programs is None")
+            return
+        for program, config in new_programs.items():
+            restart = False
+            if "name" not in config:
+                config["name"] = program
+            if program not in old_programs:
+                self.programs[config["name"]] = Program(config)
+                self.startProcess(program)
+                continue
+            else:
+                for cmd in LIST_RESTART:
+                    if cmd not in old_programs[program] and cmd not in config:
+                        continue
+                    if cmd in old_programs[program] and cmd in config:
+                        if old_programs[program][cmd] != config[cmd]:
+                            restart = True
+                            break
+                    elif (
+                        cmd in config
+                        and cmd not in old_programs[program]
+                        or cmd in old_programs[program]
+                        and cmd not in config
+                    ):
+                        restart = True
+                if restart:
+                    self.programs[config["name"]] = Program(config)
+                    self.startProcess(program)
+                else:
+                    new_dict = old_programs[program]
+                    no_restart_list = []
+                    for cmd in LIST_NO_RESTART:
+                        old_cmd = old_programs[program].get(cmd, None)
+                        new_cmd = config.get(cmd, None)
+                        if old_cmd != new_cmd:
+                            no_restart_list.append(cmd)
+                            new_dict.update({cmd: new_cmd})
+                    if not no_restart_list:
+                        continue
+                    update = ProgramConfig(new_dict)
+                    self.programs[program].updateProcess(update, no_restart_list)
+
     def monitorProcesses(self):
         def monitor():
             while True:
@@ -42,11 +107,19 @@ class TaskMaster(BaseUtils):
         thread = threading.Thread(target=monitor, daemon=True)
         thread.start()
 
+    def handle_sighup(self, signum, frame):
+        print("🔄 Recibido SIGHUP, recargando configuración...")
+        self.new_config = self._get_config()
+        self.configCmp()
+
     def startProcess(self, process_name: str):
         if process_name not in self.programs:
             logger.error(f"Process {process_name} does not exist")
             raise ValueError(self.ERROR + " The process name does not exist")
-        self.programs[process_name].startProcess()
+        try:
+            self.programs[process_name].startProcess()
+        except Exception as e:
+            logger.error(f"{e}")
 
     def stopProcess(self, process_name: str):
         if process_name not in self.programs:

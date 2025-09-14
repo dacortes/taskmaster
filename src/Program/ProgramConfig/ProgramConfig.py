@@ -84,7 +84,7 @@ class ProgramConfig(dict):
             str(k): str(v) for k, v in self.program_config.get("env", {}).items()
         }
         self["working_dir"] = self.program_config.get("working_dir", str(Path.cwd()))
-        self["umask"] = self.program_config.get("umask", "022")
+        self["umask"] = self.program_config.get("umask", 0o22)
 
         logger.info("ProgramConfig initialized correctly")
 
