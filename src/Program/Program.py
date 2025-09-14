@@ -13,6 +13,9 @@ class Program:
     def getStatus(self, process_id: int = None):
         self._process.getStatus(process_id)
 
+    def updateProcess(self, ProgramConfig, cmdList):
+        self._process.updateProcess(ProgramConfig, cmdList)
+
     def startProcess(self):
         self._process.startProcess()
 
