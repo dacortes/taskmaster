@@ -122,6 +122,9 @@ class TaskMaster(BaseUtils):
         logger.info("signal: SIGHUP, reload config file...")
         self.new_config = self._get_config()
         self.configCmp()
+        for program in self.programs.values():
+            if program["start_at_launch"]:
+                program.rebootProcess()
 
     def startProcess(self, process_name: str):
         if process_name not in self.programs:

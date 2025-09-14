@@ -25,6 +25,9 @@ class Program:
     def restartProcess(self):
         self._process.restartProcess()
 
+    def rebootProcess(self):
+        self._process.rebootProcess()
+
     def __getitem__(self, key):
         return self._process[key]
 
