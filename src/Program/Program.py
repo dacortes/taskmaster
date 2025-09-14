@@ -10,17 +10,20 @@ class Program:
         self._process = ProgramProcess(self._program_config)
         self.startProcess()
 
+    def getStatus(self, process_id: int = None):
+        self._process.getStatus(process_id)
+
     def updateProcess(self, ProgramConfig, cmdList):
         self._process.updateProcess(ProgramConfig, cmdList)
 
     def startProcess(self):
         self._process.startProcess()
 
-    def stopProcess(self):
-        self._process.stopProcess(index=0)
+    def stopProcess(self, index=None):
+        self._process.stopProcess(index)
 
-    def Restart(self):
-        self._process.Restart()
+    def restartProcess(self):
+        self._process.restartProcess()
 
     def __getitem__(self, key):
         return self._process[key]

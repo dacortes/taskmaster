@@ -275,9 +275,24 @@ class ProgramProcess(BaseUtils, dict):
                     f"{self.RED}Max restarts reached for process index {index}{self.END}"
                 )
 
-    def Restart(self):
+    def restartProcess(self):
         for index in range(self._num_proc):
             self._restartProcessIfNeeded(index)
+
+    def getStatus(self, process_id=None):
+        for index in range(self._num_proc):
+            proc = self._processes[index + 1]
+            if process_id is None or proc['_pid'] == process_id:
+                status = proc["_status"]
+                pid = proc['_pid']
+                start_time = time.strftime(
+                    "%Y-%m-%d %H:%M:%S", time.localtime(proc["_start_time"])
+                )
+                exit_code = proc.get("_exit_code", "N/A")
+                restarts = proc.get("_restarts", 0)
+                print(
+                    f"Process index: {index + 1}, PID: {pid}, Status: {status}, Start Time: {start_time}, Exit Code: {exit_code}, Restarts: {restarts}"
+                )
 
     def startProcess(self):
         start_at_launch = self.get("start_at_launch")
