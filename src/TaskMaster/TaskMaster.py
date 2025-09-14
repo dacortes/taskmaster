@@ -119,7 +119,7 @@ class TaskMaster(BaseUtils):
             self.programs[program_name].getStatus(process_id)
 
     def handle_sighup(self, signum, frame):
-        print("🔄 Recibido SIGHUP, recargando configuración...")
+        logger.info("signal: SIGHUP, reload config file...")
         self.new_config = self._get_config()
         self.configCmp()
 
