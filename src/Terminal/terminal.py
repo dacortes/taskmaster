@@ -1,6 +1,7 @@
 import select
 import sys
 
+from Logger import LOGGER as logger
 from TaskMaster import TaskMaster as TM
 
 
@@ -50,6 +51,8 @@ class InteractiveTerminal:
 
             except (KeyboardInterrupt, EOFError):
                 self._cmd_quit()
+            except Exception as e:
+                logger.error(e, exc_info=True)
 
     def _timed_input(self, timeout=1, show_prompt=False):
         """Return input if available within `timeout` seconds, else None."""
@@ -62,10 +65,13 @@ class InteractiveTerminal:
     def _dispatch(self):
         if self.cmd is None:
             return
-        if self.cmd in self.commands:
-            self.commands[self.cmd]()
-        else:
-            print(f"Unknown command: {self.cmd}")
+        try:
+            if self.cmd in self.commands:
+                self.commands[self.cmd]()
+            else:
+                print(f"Unknown command: {self.cmd}")
+        except Exception as e:
+            logger.error(e, exc_info=True)
 
     def _parse_input(self):
         parts = self.input.split()

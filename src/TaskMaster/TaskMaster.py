@@ -25,7 +25,6 @@ class TaskMaster(BaseUtils):
 
         programs_config = self.config.get("programs", {})
         if not programs_config:
-            logger.error("No programs defined in configuration")
             raise ValueError("No programs defined in configuration")
 
         for k, v in programs_config.items():
@@ -33,8 +32,12 @@ class TaskMaster(BaseUtils):
             # we assign name using the key in the list of dicts
             if "name" not in v:
                 v["name"] = k
-            self.programs[v["name"]] = Program(v)
-            self.startProcess(k)
+            try:
+                self.programs[v["name"]] = Program(v)
+            except Exception as e:
+                logger.error(
+                    f"Error initializing program {v['name']}: {e}", exc_info=True
+                )
         self._num_proc = len(self.programs)
         self.monitorProcesses()
 
@@ -94,8 +97,11 @@ class TaskMaster(BaseUtils):
     def monitorProcesses(self):
         def monitor():
             while True:
-                for program in self.programs.values():
-                    program.Restart()
+                try:
+                    for program in self.programs.values():
+                        program.Restart()
+                except Exception as e:
+                    logger.error(e, exc_info=True)
                 time.sleep(1)
 
         thread = threading.Thread(target=monitor, daemon=True)
