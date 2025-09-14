@@ -33,7 +33,14 @@ class ProgramProcess(BaseUtils, dict):
 
     @staticmethod
     def startUpdate(obj):
-        pass
+        if obj._old_start_at_launch != obj["start_at_launch"]:
+            if obj["start_at_launch"] == True:
+                if obj._processes:
+                    obj.rebootProcess()
+                else:
+                    obj.startProcess()
+            else:
+                obj.stopProcess(flag=True)
 
     attr_map = {
         "processes": ("_num_proc", processUpdate),
@@ -105,7 +112,7 @@ class ProgramProcess(BaseUtils, dict):
 
     def updateProcess(self, data_update: ProgramConfig, no_restart_list: list):
         self.old_num_proc = self._num_proc
-        # self._old_start_at_launch = self._start_at_launch
+        self._old_start_at_launch = self["start_at_launch"]
         for idx in range(0, len(no_restart_list)):
             logger.debug(f"update no restart list -- {no_restart_list[idx]}")
             parameter = no_restart_list[idx]
@@ -283,7 +290,9 @@ class ProgramProcess(BaseUtils, dict):
 
     def rebootProcess(self):
         for index in range(1, self._num_proc + 1):
-            proc = self._processes[index]
+            proc = self._processes.get(index, None)
+            if proc is None:
+                continue
             if proc["_status"] != "running":
                 new = self._initProcess(name_proc=self["name"], index=index)
                 self._processes.update({index: new})
@@ -314,7 +323,7 @@ class ProgramProcess(BaseUtils, dict):
                 f"{self.YELLOW}Skipping auto-start for process: {self['name']}{self.END}"
             )
 
-    def stopProcess(self, index=None, pid=None):
+    def stopProcess(self, index=None, pid=None, flag=None):
         self._stop_timeout = self.get("stop_timeout")
         self._stop_signal = self._getStopSignal()
 
@@ -341,4 +350,6 @@ class ProgramProcess(BaseUtils, dict):
                 )
 
         elif self["start_at_launch"]:
+            self._stopAllProcess()
+        elif flag is not None:
             self._stopAllProcess()

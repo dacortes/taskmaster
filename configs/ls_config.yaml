@@ -13,7 +13,7 @@ programs:
     umask: 022
     workingdir: /tmp
     autostart: true
-    start_at_launch: False
+    start_at_launch: True
     autorestart: unexpected
     expected_exit_codes:
     - 0

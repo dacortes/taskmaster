@@ -120,6 +120,9 @@ class TaskMaster(BaseUtils):
 
     def handle_sighup(self, signum, frame):
         logger.info("signal: SIGHUP, reload config file...")
+        self.reboot()
+
+    def reboot(self):
         self.new_config = self._get_config()
         self.configCmp()
         for program in self.programs.values():
@@ -147,8 +150,8 @@ class TaskMaster(BaseUtils):
         self.programs[process_name].restartProcess()
 
     def reloadConfig(self):
-        logger.info("Reloading configuration (stub).")
-        pass
+        logger.info("Reloading configuration.")
+        self.reboot()
 
     def __repr__(self):
         return (
