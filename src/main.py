@@ -1,5 +1,6 @@
 import argparse
 import os
+import sys
 
 import yaml
 
@@ -44,12 +45,19 @@ def get_config(file: str) -> dict:
 
 
 def main():
-    args = get_args()
-    config, file = get_config(args.config_file)
-    config["file_path"] = file
-    terminal = Terminal(config)
-    terminal.run()
+    res = 0
+    logger.info("Starting TaskMaster...")
+    try:
+        args = get_args()
+        config, file = get_config(args.config_file)
+        config["file_path"] = file
+        terminal = Terminal(config)
+        terminal.run()
+    except BaseException as e:
+        logger.error(e, exc_info=True)
+        res = 1
+    return res
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

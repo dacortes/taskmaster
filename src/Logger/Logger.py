@@ -2,17 +2,18 @@ import logging
 import os
 import socket
 import sys
-from logging.handlers import SysLogHandler  # 🔹 Syslog handler
-
-# Add root to the paths so it can access the Constants module even if run from a different directory
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from logging.handlers import SysLogHandler
 
 from Constants import APP_NAME, LOG_DIR, LOG_FILE, LOG_LEVEL, REMOTE_SYSLOG
 
 from .CleanFormater import CleanFormatter
+from .LastFrameFormatter import LastFrameFormatter
 
 # 🔹 Ensure log directory exists
 os.makedirs(LOG_DIR, exist_ok=True)
+
+log_string = "[%(asctime)-19s] [%(filename)-20s %(funcName)-20s %(lineno)-4d] %(levelname)-7s - %(message)s"
+datefmt = "%Y-%m-%d %H:%M:%S"
 
 
 class Logger:
@@ -51,14 +52,10 @@ class Logger:
             file_handler = logging.FileHandler(os.path.join(LOG_DIR, LOG_FILE))
             file_handler.setLevel(LOG_LEVEL)
 
-            # Formatters
-            formatter = logging.Formatter(
-                "[%(asctime)s] [%(filename)s:%(funcName)s:%(lineno)d] %(levelname)s - %(message)s"
-            )
-            clean_formatter = CleanFormatter(
-                "[%(asctime)s] [%(filename)s:%(funcName)s:%(lineno)d] %(levelname)s - %(message)s"
-            )
+            formatter = LastFrameFormatter(log_string, datefmt=datefmt)
 
+            # I don't need ASCII code when writing to a file
+            clean_formatter = CleanFormatter(log_string, datefmt=datefmt)
             stream_handler.setFormatter(formatter)
             file_handler.setFormatter(clean_formatter)
 
@@ -71,16 +68,14 @@ class Logger:
                 else:
                     # Fallback: UDP to localhost:514 or 5514 if no /dev/log
                     syslog_handler = SysLogHandler(
-                        address=("localhost", 5514), socktype=socket.SOCK_DGRAM
+                        address=("localhost", 514), socktype=socket.SOCK_DGRAM
                     )
             except (FileNotFoundError, PermissionError, OSError):
                 syslog_handler = None  # Skip if syslog unavailable
 
             if syslog_handler:
                 syslog_handler.setLevel(LOG_LEVEL)
-                syslog_formatter = logging.Formatter(
-                    f"{APP_NAME} [%(filename)s:%(lineno)d] %(levelname)s - %(message)s"
-                )
+                syslog_formatter = logging.Formatter(log_string, datefmt=datefmt)
                 syslog_handler.setFormatter(syslog_formatter)
                 logger.addHandler(syslog_handler)
 
@@ -91,9 +86,7 @@ class Logger:
                         address=remote_syslog_server, socktype=socket.SOCK_DGRAM
                     )
                     remote_handler.setLevel(LOG_LEVEL)
-                    remote_formatter = CleanFormatter(
-                        f"{APP_NAME} [%(filename)s:%(lineno)d] %(levelname)s - %(message)s"
-                    )
+                    remote_formatter = CleanFormatter(log_string, datefmt=datefmt)
                     remote_handler.setFormatter(remote_formatter)
                     logger.addHandler(remote_handler)
                 except Exception as e:

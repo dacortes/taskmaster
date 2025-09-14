@@ -10,7 +10,6 @@ from Program.ProgramConfig import ProgramConfig
 
 
 class ProgramProcess(BaseUtils, dict):
-
     @staticmethod
     def nothing(obj):
         pass
@@ -21,7 +20,9 @@ class ProgramProcess(BaseUtils, dict):
         if obj.old_num_proc > obj._num_proc:
             for index in range(obj._num_proc, obj.old_num_proc):
                 index += 1
-                logger.info(f"About to destroy process {index} of program {obj['name']} ")
+                logger.info(
+                    f"About to destroy process {index} of program {obj['name']} "
+                )
                 obj.stopProcess(index)
         elif obj.old_num_proc < obj._num_proc:
             for index in range(obj.old_num_proc, obj._num_proc):
@@ -30,10 +31,17 @@ class ProgramProcess(BaseUtils, dict):
                     name_proc=obj["name"], index=index
                 )
 
-
     @staticmethod
     def startUpdate(obj):
-        pass
+        if obj._old_start_at_launch != obj["start_at_launch"]:
+            if obj["start_at_launch"] == True:
+                if obj._processes:
+                    obj.rebootProcess()
+                else:
+                    obj.startProcess()
+            else:
+                obj.stopProcess(flag=True)
+
     attr_map = {
         "processes": ("_num_proc", processUpdate),
         "start_at_launch": ("_start_at_launch", startUpdate),
@@ -42,7 +50,7 @@ class ProgramProcess(BaseUtils, dict):
         "success_timeout": ("_success_timeout", nothing),
         "max_restarts": ("_max_restarts", nothing),
         "stop_signal": ("_stop_signal", nothing),
-        "stop_timeout": ("_stop_timeout", nothing)
+        "stop_timeout": ("_stop_timeout", nothing),
     }
     """
     ProgramProcess is a class for managing and controlling multiple subprocesses with advanced configuration options.
@@ -87,6 +95,7 @@ class ProgramProcess(BaseUtils, dict):
             raise ValueError(self.ERROR + " Null parameter in constructor")
         self.addDataProcess(pc)
         self._num_proc = self.get("processes")
+        self._processes = {}
 
     def __del__(self):
         self.stopProcess()
@@ -101,11 +110,11 @@ class ProgramProcess(BaseUtils, dict):
         for proc, cont in data.items():
             self[proc] = copy.deepcopy(cont)
 
-    def updateProcess(self, data_update: ProgramConfig, no_restart_list :list):
+    def updateProcess(self, data_update: ProgramConfig, no_restart_list: list):
         self.old_num_proc = self._num_proc
-        # self._old_start_at_launch = self._start_at_launch
+        self._old_start_at_launch = self["start_at_launch"]
         for idx in range(0, len(no_restart_list)):
-            logger.debug(f"{idx} -- {no_restart_list[idx]}")
+            logger.debug(f"update no restart list -- {no_restart_list[idx]}")
             parameter = no_restart_list[idx]
             self[parameter] = data_update[parameter]
             if parameter in self.attr_map:
@@ -113,13 +122,12 @@ class ProgramProcess(BaseUtils, dict):
                 setattr(self, private_attr_name, data_update[parameter])
 
         for idx in range(0, len(no_restart_list)):
-            logger.debug(f"{idx} -- {no_restart_list[idx]}")
+            logger.debug(f"call function update -- {no_restart_list[idx]}")
             parameter = no_restart_list[idx]
             self[parameter] = data_update[parameter]
             if parameter in self.attr_map:
                 _, update_func = self.attr_map[parameter]
                 update_func(self)
-
 
     @staticmethod
     def _initRedirectionFile(num_proc, name_file, index):
@@ -170,9 +178,7 @@ class ProgramProcess(BaseUtils, dict):
                 f"{self.GREEN}{self.LIGTH}Process{self.END} '{curr_name}' initialized (PID: {process.pid})"
             )
         except Exception as err:
-            raise ValueError(
-                f"In process initialization {curr_name}: {err}"
-            )
+            raise ValueError(f"In process initialization {curr_name}: {err}")
         return new_process
 
     def _createProcess(self):
@@ -199,11 +205,8 @@ class ProgramProcess(BaseUtils, dict):
         if "umask" in self:
             umask_val = self["umask"]
             self._preexec_fn = lambda: os.umask(umask_val)
-        self._processes = {}
-        for new in range(self._num_proc):
-            self._processes[new + 1] = self._initProcess(
-                name_proc=self["name"], index=new + 1
-            )
+        for new in range(1, self._num_proc + 1):
+            self._processes[new] = self._initProcess(name_proc=self["name"], index=new)
 
     def _getStopSignal(self):
         signal_name = self.get("stop_signal")
@@ -221,21 +224,23 @@ class ProgramProcess(BaseUtils, dict):
             )
 
     def _stopAllProcess(self):
-        for new in range(self._num_proc):
-            if (new + 1) in self._processes:
-                process = self._processes[new + 1]["_popen"]
+        for new in range(1, self._num_proc + 1):
+            if (new) in self._processes and self._processes[new][
+                "_status"
+            ] == "running":
+                process = self._processes[new]["_popen"]
                 try:
                     self._stopSingleProcess(process)
-                    self._processes[new + 1]["_status"] = "stopped"
-                    self._processes[new + 1]["_exit_code"] = process.returncode
-                    self._processes[new + 1]["stop_time"] = time.time()
-                    self._processes[new + 1]["_stop_signal_used"] = self._stop_timeout
+                    self._processes[new]["_status"] = "stopped"
+                    self._processes[new]["_exit_code"] = process.returncode
+                    self._processes[new]["stop_time"] = time.time()
+                    self._processes[new]["_stop_signal_used"] = self._stop_timeout
                     logger.debug(
-                        f"{self.YELLOW} Process {self.END} program index:{new + 1} -- pid:{self._processes[new + 1]['_pid']} {self.RED}{self.LIGTH}stopped{self.END}"
+                        f"{self.YELLOW} Process {self.END} program index:{new} -- pid:{self._processes[new]['_pid']} {self.RED}{self.LIGTH}stopped{self.END}"
                     )
                 except Exception as err:
                     raise ValueError(
-                        f"{self.ERROR} stopping process: {self._processes[new + 1]['_pid']}: {err}"
+                        f"{self.ERROR} stopping process: {self._processes[new]['_pid']}: {err}"
                     )
 
     def _getProcess(self, index=None, pid=None):
@@ -245,6 +250,8 @@ class ProgramProcess(BaseUtils, dict):
         return proc
 
     def _restartProcessIfNeeded(self, index):
+        if not self._processes:
+            return
         proc_info = self._processes[index]
         exit_code = proc_info["_popen"].poll()
         if exit_code is None:
@@ -277,9 +284,35 @@ class ProgramProcess(BaseUtils, dict):
                     f"{self.RED}Max restarts reached for process index {index}{self.END}"
                 )
 
-    def Restart(self):
-        for index in range(self._num_proc):
+    def restartProcess(self):
+        for index in range(1, self._num_proc + 1):
             self._restartProcessIfNeeded(index)
+
+    def rebootProcess(self):
+        for index in range(1, self._num_proc + 1):
+            proc = self._processes.get(index, None)
+            if proc is None:
+                continue
+            if proc["_status"] != "running":
+                new = self._initProcess(name_proc=self["name"], index=index)
+                self._processes.update({index: new})
+
+    def getStatus(self, process_id=None):
+        if not self._processes:
+            return
+        for index in range(1, self._num_proc + 1):
+            proc = self._processes[index]
+            if process_id is None or proc['_pid'] == process_id:
+                status = proc["_status"]
+                pid = proc['_pid']
+                start_time = time.strftime(
+                    "%Y-%m-%d %H:%M:%S", time.localtime(proc["_start_time"])
+                )
+                exit_code = proc.get("_exit_code", "N/A")
+                restarts = proc.get("_restarts", 0)
+                print(
+                    f"Process index: {index}, PID: {pid}, Status: {status}, Start Time: {start_time}, Exit Code: {exit_code}, Restarts: {restarts}"
+                )
 
     def startProcess(self):
         start_at_launch = self.get("start_at_launch")
@@ -290,13 +323,15 @@ class ProgramProcess(BaseUtils, dict):
                 f"{self.YELLOW}Skipping auto-start for process: {self['name']}{self.END}"
             )
 
-    def stopProcess(self, index=None, pid=None):
+    def stopProcess(self, index=None, pid=None, flag=None):
         self._stop_timeout = self.get("stop_timeout")
         self._stop_signal = self._getStopSignal()
 
-        if index or pid:
+        if index is not None or pid is not None:
             stop = self._getProcess(index, pid)
             if stop is None:
+                return
+            if stop["_status"] != "running":
                 return
             logger.debug(stop)
             try:
@@ -315,4 +350,6 @@ class ProgramProcess(BaseUtils, dict):
                 )
 
         elif self["start_at_launch"]:
+            self._stopAllProcess()
+        elif flag is not None:
             self._stopAllProcess()

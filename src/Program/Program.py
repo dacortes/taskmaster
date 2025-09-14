@@ -8,25 +8,25 @@ class Program:
         logger.debug(f"Initializing Program with config: {dict}")
         self._program_config = ProgramConfig(dict)
         self._process = ProgramProcess(self._program_config)
-        # self._process = ProgramProcess(dict)
+        self.startProcess()
+
+    def getStatus(self, process_id: int = None):
+        self._process.getStatus(process_id)
 
     def updateProcess(self, ProgramConfig, cmdList):
         self._process.updateProcess(ProgramConfig, cmdList)
-    
+
     def startProcess(self):
         self._process.startProcess()
 
-    def stopProcess(self):
-        try:
-            self._process.stopProcess(index=0)
-        except Exception:
-            None
+    def stopProcess(self, index=None):
+        self._process.stopProcess(index)
 
-    def Restart(self):
-        try:
-            self._process.Restart()
-        except Exception:
-            None
+    def restartProcess(self):
+        self._process.restartProcess()
+
+    def rebootProcess(self):
+        self._process.rebootProcess()
 
     def __getitem__(self, key):
         return self._process[key]
