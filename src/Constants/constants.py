@@ -20,4 +20,17 @@ if not CONFIG_PATH.endswith("/"):
 
 # lits of process for signal
 LIST_RESTART = ["command", "umask", "working_dir", "stdout", "stderr", "env"]
-LIST_NO_RESTART = ["processes", "start_at_launch", "restart_policy", "expected_exit_codes", "success_timeout", "max_restarts", "stop_signal", "stop_timeout", ]
+LIST_NO_RESTART = [
+    "processes",
+    "start_at_launch",
+    "restart_policy",
+    "expected_exit_codes",
+    "success_timeout",
+    "max_restarts",
+    "stop_signal",
+    "stop_timeout",
+]
+
+#  Log Server Variables
+
+REMOTE_SYSLOG = ("127.0.0.1", 5514)

@@ -1,13 +1,14 @@
 import logging
 import os
-import sys
 import socket
+import sys
 from logging.handlers import SysLogHandler  # 🔹 Syslog handler
 
 # Add root to the paths so it can access the Constants module even if run from a different directory
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from Constants import APP_NAME, LOG_DIR, LOG_FILE, LOG_LEVEL
+from Constants import APP_NAME, LOG_DIR, LOG_FILE, LOG_LEVEL, REMOTE_SYSLOG
+
 from .CleanFormater import CleanFormatter
 
 # 🔹 Ensure log directory exists
@@ -22,6 +23,7 @@ class Logger:
       - Local Syslog (if available)
       - Remote Syslog server (if configured)
     """
+
     _loggers = {}
 
     @staticmethod
@@ -68,7 +70,9 @@ class Logger:
                     syslog_handler = SysLogHandler(address="/dev/log")
                 else:
                     # Fallback: UDP to localhost:514 or 5514 if no /dev/log
-                    syslog_handler = SysLogHandler(address=("localhost", 5514), socktype=socket.SOCK_DGRAM)
+                    syslog_handler = SysLogHandler(
+                        address=("localhost", 5514), socktype=socket.SOCK_DGRAM
+                    )
             except (FileNotFoundError, PermissionError, OSError):
                 syslog_handler = None  # Skip if syslog unavailable
 
@@ -83,15 +87,19 @@ class Logger:
             # Remote Syslog Server Handler (optional)
             if remote_syslog_server:
                 try:
-                    remote_handler = SysLogHandler(address=remote_syslog_server, socktype=socket.SOCK_DGRAM)
+                    remote_handler = SysLogHandler(
+                        address=remote_syslog_server, socktype=socket.SOCK_DGRAM
+                    )
                     remote_handler.setLevel(LOG_LEVEL)
-                    remote_formatter = logging.Formatter(
+                    remote_formatter = CleanFormatter(
                         f"{APP_NAME} [%(filename)s:%(lineno)d] %(levelname)s - %(message)s"
                     )
                     remote_handler.setFormatter(remote_formatter)
                     logger.addHandler(remote_handler)
                 except Exception as e:
-                    print(f"Could not connect to the remote syslog server {remote_syslog_server}: {e}")
+                    print(
+                        f"Could not connect to the remote syslog server {remote_syslog_server}: {e}"
+                    )
 
             # Add Console and File Handlers (always last)
             logger.addHandler(stream_handler)
@@ -103,7 +111,7 @@ class Logger:
 
 # 🔹 Global logger instance (local syslog + console + file)
 # LOGGER = Logger.get_logger(APP_NAME)
-LOGGER = Logger.get_logger(APP_NAME, remote_syslog_server=("127.0.0.1", 5514))
+LOGGER = Logger.get_logger(APP_NAME, remote_syslog_server=REMOTE_SYSLOG)
 
 # 🔹 Simple test
 if __name__ == "__main__":
@@ -113,7 +121,7 @@ if __name__ == "__main__":
     # Remote logger (also sends logs to the remote syslog server)
     remote_logger = Logger.get_logger(
         "remote_logger",
-        remote_syslog_server=("127.0.0.1", 5514)  # Change to your remote server
+        remote_syslog_server=("127.0.0.1", 5514),  # Change to your remote server
     )
     remote_logger.info("This goes to console, file, local syslog and remote syslog")
     remote_logger.warning("This also reaches the remote syslog server")
