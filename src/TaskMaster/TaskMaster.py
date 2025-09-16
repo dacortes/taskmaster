@@ -100,6 +100,7 @@ class TaskMaster(BaseUtils):
             while True:
                 try:
                     for program in self.programs.values():
+                        program.check_startup_timeouts()
                         program.restartProcess()
                 except Exception as e:
                     logger.error(e, exc_info=True)

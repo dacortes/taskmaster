@@ -41,3 +41,35 @@ programs:
       DB_PORT: "5432"
     working_dir: "."
     umask: 027
+
+  success_timeout:
+    command: "/usr/bin/python  /home/luis/proyects/taskmaster/worker/success_time_out.py"
+    processes: 1
+    start_at_launch: true
+    restart_policy: "on_failure"
+    expected_exit_codes:
+      - 0
+      - 2
+    success_timeout: 5
+    max_restarts: 3
+    stop_signal: "SIGTERM"
+    stop_timeout: 5
+    stdout: "./success_timeout.out"
+    stderr: "./success_timeout.err"
+    umask: 027
+
+  fail_timeout:
+    command: "/usr/bin/python  /home/luis/proyects/taskmaster/worker/fail_time_out.py"
+    processes: 1
+    start_at_launch: true
+    restart_policy: "on_failure"
+    expected_exit_codes:
+      - 0
+      - 2
+    success_timeout: 5
+    max_restarts: 3
+    stop_signal: "SIGTERM"
+    stop_timeout: 5
+    stdout: "./fail_time_out.out"
+    stderr: "./fail_time_out.err"
+    umask: 027

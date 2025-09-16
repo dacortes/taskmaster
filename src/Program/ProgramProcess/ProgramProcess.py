@@ -168,13 +168,9 @@ class ProgramProcess(BaseUtils, dict):
             )
             new_process["_popen"] = process
             new_process['_pid'] = process.pid
-            new_process["_status"] = "running"
+            new_process["_status"] = "starting"
             new_process["_start_time"] = time.time()
             new_process["_restarts"] = 0
-            if time.time() - new_process["_start_time"] > self._success_timeout:
-                new_process["_successful"] = True
-            else:
-                new_process["_successful"] = False
             logger.debug(
                 f"{self.GREEN}{self.LIGTH}Process{self.END} '{curr_name}' initialized (PID: {process.pid})"
             )
@@ -296,7 +292,7 @@ class ProgramProcess(BaseUtils, dict):
             proc = self._processes.get(index, None)
             if proc is None:
                 continue
-            if proc["_status"] != "running":
+            if proc["_status"] != "running" and proc["_status"] != "starting":
                 new = self._initProcess(name_proc=self["name"], index=index)
                 self._processes.update({index: new})
 
@@ -314,7 +310,7 @@ class ProgramProcess(BaseUtils, dict):
                 exit_code = proc.get("_exit_code", "N/A")
                 restarts = proc.get("_restarts", 0)
                 print(
-                    f"Process index: {index}, PID: {pid}, Status: {status}, Start Time: {start_time}, Exit Code: {exit_code}, Restarts: {restarts}"
+                    f"Program:{self['name']} Process index: {index}, PID: {pid}, Status: {status}, Start Time: {start_time}, Exit Code: {exit_code}, Restarts: {restarts}"
                 )
 
     def startProcess(self):
@@ -353,3 +349,31 @@ class ProgramProcess(BaseUtils, dict):
             self._stopAllProcess()
         elif flag is not None:
             self._stopAllProcess()
+
+    def check_startup_timeouts(self):
+        current_time = time.time()
+        for index in range(1, self._num_proc + 1):
+            proc_info = self._processes.get(index)
+            if not proc_info:
+                continue
+
+            if proc_info["_status"] == "starting":
+                proc = proc_info["_popen"]
+
+                if proc.poll() is not None:
+                    proc_info["_status"] = "exited"
+                    proc_info["_successful"] = False
+                    logger.warning(
+                        f"{self.RED}Program '{self['name']}', Process index {index} exited "
+                        f"before reaching success_timeout ({self._success_timeout}s).{self.END}"
+                    )
+                    continue
+
+                elapsed_time = current_time - proc_info["_start_time"]
+                if elapsed_time >= self._success_timeout:
+                    proc_info["_status"] = "running"
+                    proc_info["_successful"] = True
+                    logger.info(
+                        f"{self.GREEN}Program '{self['name']}', Process index {index} "
+                        f"has successfully started after {self._success_timeout}s.{self.END}"
+                    )
