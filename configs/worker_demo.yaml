@@ -73,3 +73,20 @@ programs:
     stdout: "./fail_time_out.out"
     stderr: "./fail_time_out.err"
     umask: 027
+
+
+  takes_too_long_to_die:
+    command: "/usr/bin/python  /home/luis/proyects/taskmaster/worker/takes_too_long_to_die.py"
+    processes: 1
+    start_at_launch: true
+    restart_policy: "on_failure"
+    expected_exit_codes:
+      - 0
+      - 2
+    success_timeout: 5
+    max_restarts: 3
+    stop_signal: "SIGTERM"
+    stop_timeout: 5
+    stdout: "./takes_too_long_to_die.out"
+    stderr: "./takes_too_long_to_die.err"
+    umask: 027

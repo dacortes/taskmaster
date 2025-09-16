@@ -6,6 +6,7 @@ from .constants import (
     LOG_DIR,
     LOG_FILE,
     LOG_LEVEL,
+    PRINT_SYSLOG,
     REMOTE_SYSLOG,
 )
 
@@ -18,4 +19,5 @@ __all__ = [
     "LIST_RESTART",
     "LIST_NO_RESTART",
     "REMOTE_SYSLOG",
+    "PRINT_SYSLOG",
 ]
