@@ -95,6 +95,7 @@ class ProgramProcess(BaseUtils, dict):
         self.addDataProcess(pc)
         self._num_proc = self.get("processes")
         self._processes = {}
+        self._log_restart_fails = True
 
     def __del__(self):
         self.stopProcess()
@@ -179,13 +180,12 @@ class ProgramProcess(BaseUtils, dict):
             )
         except Exception as err:
             raise ValueError(f"In process initialization {curr_name}: {err}")
-        logger.info(f"Process '{curr_name}' started with PID {process.pid}.")
         return new_process
 
     def _createProcess(self):
         self._command = self.get("command", "").split()
         self._working_directory = self.get("working_dir", None)
-        self._use_shell = self.get("shell", True)
+        self._use_shell = self.get("shell", False)
 
         self._max_restarts = self.get("max_restarts")
         self._success_timeout = self.get("success_timeout")
@@ -264,6 +264,7 @@ class ProgramProcess(BaseUtils, dict):
             restart_needed = True
         elif (
             self._restart_policy == "unexpected"
+            or self._restart_policy == "on_failure"
             and exit_code not in self._expected_exit_codes
         ):
             restart_needed = True
@@ -280,9 +281,11 @@ class ProgramProcess(BaseUtils, dict):
                 )
                 self._processes[index]["_restarts"] = restarts + 1
             else:
-                logger.info(
-                    f"{self.RED}Max restarts reached for process index {index}{self.END}"
-                )
+                if self._log_restart_fails:
+                    self._log_restart_fails = False
+                    logger.info(
+                        f"{self.RED}Max restarts reached for process index {index}{self.END}"
+                    )
 
     def restartProcess(self):
         for index in range(1, self._num_proc + 1):
