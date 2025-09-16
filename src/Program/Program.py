@@ -9,6 +9,7 @@ class Program:
         self._program_config = ProgramConfig(dict)
         self._process = ProgramProcess(self._program_config)
         self.startProcess()
+        logger.info(f"Program '{self._program_config.name}' initialized.")
 
     def getStatus(self, process_id: int = None):
         self._process.getStatus(process_id)

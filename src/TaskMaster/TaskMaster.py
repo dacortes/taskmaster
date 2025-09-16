@@ -39,7 +39,8 @@ class TaskMaster(BaseUtils):
                     exc_info=True,
                 )
         self._num_proc = len(self.programs)
-        # self.monitorProcesses()
+        self.monitorProcesses()
+        logger.info("TaskMaster initialized.")
 
     def _get_config(self) -> dict:
         logger.debug(f"Reloading YAML file: {self.file_path}")
@@ -106,11 +107,12 @@ class TaskMaster(BaseUtils):
 
         thread = threading.Thread(target=monitor, daemon=True)
         thread.start()
+        logger.info("Started process monitoring thread.")
 
     def getStatus(self, program_name: str = None, process_id: int = None):
         if program_name is None:
             logger.info("Getting status for all programs")
-            for name, program in self.programs.items():
+            for _, program in self.programs.items():
                 program.getStatus(process_id)
         else:
             if program_name not in self.programs:

@@ -16,7 +16,6 @@ class CleanFormatter(logging.Formatter):
             record.lineno = last_frame.lineno
             # Clear exc_info to prevent default traceback printing
             record.exc_info = None
-
         msg = super().format(record)
         # Strip ANSI codes
         return ANSI_ESCAPE.sub('', msg)
