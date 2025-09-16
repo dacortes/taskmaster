@@ -179,7 +179,6 @@ class ProgramProcess(BaseUtils, dict):
             )
         except Exception as err:
             raise ValueError(f"In process initialization {curr_name}: {err}")
-        logger.info(f"Process '{curr_name}' started with PID {process.pid}.")
         return new_process
 
     def _createProcess(self):
