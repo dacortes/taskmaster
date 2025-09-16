@@ -1,7 +1,7 @@
 programs:
   example:
     command: "/usr/bin/python  /home/luis/proyects/taskmaster/worker/worker.py"
-    processes: 1
+    processes: 2
     start_at_launch: true
     restart_policy: "on_failure"
     expected_exit_codes:
@@ -20,6 +20,44 @@ programs:
       DB_PORT: "5432"
     working_dir: "."
     umask: 027
+
+  working_dir_and_env:
+    command: "/usr/bin/python  /home/luis/proyects/taskmaster/worker/working_dir_and_env.py"
+    processes: 1
+    start_at_launch: true
+    restart_policy: "on_failure"
+    expected_exit_codes:
+      - 0
+      - 2
+    success_timeout: 0
+    max_restarts: 3
+    stop_signal: "SIGTERM"
+    stop_timeout: 5
+    discard_output: false
+    stdout: "./working_dir_and_env.out"
+    stderr: "./working_dir_and_env.err"
+    env:
+      APP_ENV: "production"
+      DB_HOST: "localhost"
+      DB_PORT: "5432"
+    working_dir: "/tmp"
+    umask: 027
+
+  discard_output_example:
+    command: "/usr/bin/python  /home/luis/proyects/taskmaster/worker/worker.py"
+    processes: 1
+    start_at_launch: true
+    restart_policy: "on_failure"
+    expected_exit_codes:
+      - 0
+      - 2
+    success_timeout: 5
+    max_restarts: 3
+    stop_signal: "SIGTERM"
+    stop_timeout: 5
+    discard_output: True
+
+
   fails:
     command: "/usr/bin/python  /home/luis/proyects/taskmaster/worker/fails.py"
     processes: 1
