@@ -34,3 +34,8 @@ LIST_NO_RESTART = [
 #  Log Server Variables
 
 REMOTE_SYSLOG = ("127.0.0.1", 5514)
+
+
+#  Log Server Variables
+
+PRINT_SYSLOG = os.getenv("PRINT_SYSLOG", "False").lower() in ("true", "1", "t")

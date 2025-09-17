@@ -26,6 +26,9 @@ class Program:
     def restartProcess(self):
         self._process.restartProcess()
 
+    def check_startup_timeouts(self):
+        self._process.check_startup_timeouts()
+
     def rebootProcess(self):
         self._process.rebootProcess()
 

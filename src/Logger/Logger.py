@@ -4,7 +4,14 @@ import socket
 import sys
 from logging.handlers import SysLogHandler
 
-from Constants import APP_NAME, LOG_DIR, LOG_FILE, LOG_LEVEL, REMOTE_SYSLOG
+from Constants import (
+    APP_NAME,
+    LOG_DIR,
+    LOG_FILE,
+    LOG_LEVEL,
+    PRINT_SYSLOG,
+    REMOTE_SYSLOG,
+)
 
 from .CleanFormater import CleanFormatter
 from .LastFrameFormatter import LastFrameFormatter
@@ -45,19 +52,20 @@ class Logger:
         # Only add handlers once per logger
         if not logger.handlers:
             # Console Handler
-            stream_handler = logging.StreamHandler(sys.stdout)
-            stream_handler.setLevel(LOG_LEVEL)
-
+            clean_formatter = CleanFormatter(log_string, datefmt=datefmt)
+            formatter = LastFrameFormatter(log_string, datefmt=datefmt)
+            if PRINT_SYSLOG:
+                stream_handler = logging.StreamHandler(sys.stdout)
+                stream_handler.setLevel(LOG_LEVEL)
+                stream_handler.setFormatter(formatter)
+                logger.addHandler(stream_handler)
             # File Handler
             file_handler = logging.FileHandler(os.path.join(LOG_DIR, LOG_FILE))
             file_handler.setLevel(LOG_LEVEL)
 
-            formatter = LastFrameFormatter(log_string, datefmt=datefmt)
-
             # I don't need ASCII code when writing to a file
-            clean_formatter = CleanFormatter(log_string, datefmt=datefmt)
-            stream_handler.setFormatter(formatter)
             file_handler.setFormatter(clean_formatter)
+            logger.addHandler(file_handler)
 
             # Local Syslog Handler
             syslog_handler = None
@@ -95,8 +103,6 @@ class Logger:
                     )
 
             # Add Console and File Handlers (always last)
-            logger.addHandler(stream_handler)
-            logger.addHandler(file_handler)
 
         Logger._loggers[name] = logger
         return logger
