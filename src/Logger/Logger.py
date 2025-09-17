@@ -75,7 +75,7 @@ class Logger:
 
             if syslog_handler:
                 syslog_handler.setLevel(LOG_LEVEL)
-                syslog_formatter = logging.Formatter(log_string, datefmt=datefmt)
+                syslog_formatter = CleanFormatter(log_string, datefmt=datefmt)
                 syslog_handler.setFormatter(syslog_formatter)
                 logger.addHandler(syslog_handler)
 

@@ -35,6 +35,7 @@ class InteractiveTerminal:
         self.cmd = None
         self.input = None
         self.cmd_options = []
+        logger.info("Interactive terminal initialized.")
 
     def run(self):
         self.commands["help"]()

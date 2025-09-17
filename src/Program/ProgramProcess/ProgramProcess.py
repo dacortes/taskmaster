@@ -16,7 +16,6 @@ class ProgramProcess(BaseUtils, dict):
 
     @staticmethod
     def processUpdate(obj):
-        # 5, 3. 5-3 = 2
         if obj.old_num_proc > obj._num_proc:
             for index in range(obj._num_proc, obj.old_num_proc):
                 index += 1
@@ -34,7 +33,7 @@ class ProgramProcess(BaseUtils, dict):
     @staticmethod
     def startUpdate(obj):
         if obj._old_start_at_launch != obj["start_at_launch"]:
-            if obj["start_at_launch"] == True:
+            if obj["start_at_launch"]:
                 if obj._processes:
                     obj.rebootProcess()
                 else:
@@ -128,6 +127,7 @@ class ProgramProcess(BaseUtils, dict):
             if parameter in self.attr_map:
                 _, update_func = self.attr_map[parameter]
                 update_func(self)
+        logger.info(f"Process '{self['name']}' configuration updated.")
 
     @staticmethod
     def _initRedirectionFile(num_proc, name_file, index):
@@ -222,6 +222,7 @@ class ProgramProcess(BaseUtils, dict):
             logger.warning(
                 f"{self.YELLOW}Process '{process.pid}' force killed with SIGKILL after timeout{self.END}"
             )
+        logger.info(f"Process '{process.pid}' stopped.")
 
     def _stopAllProcess(self):
         for new in range(1, self._num_proc + 1):
@@ -256,8 +257,6 @@ class ProgramProcess(BaseUtils, dict):
         exit_code = proc_info["_popen"].poll()
         if exit_code is None:
             return
-        # Commenting to pass linter
-        # runtime = time.time() - proc_info["_start_time"]
         restart_needed = False
 
         if self._restart_policy == "always":
@@ -341,9 +340,6 @@ class ProgramProcess(BaseUtils, dict):
                 stop["_exit_code"] = process.returncode
                 stop["stop_time"] = time.time()
                 stop["_stop_signal_used"] = self._stop_timeout
-                logger.info(
-                    f"{self.YELLOW} Process {self.END} program index:{index} -- pid:{self._processes[index]['_pid']}' {self.RED}{self.LIGTH}stopped{self.END}"
-                )
             except Exception as err:
                 raise ValueError(
                     f"{self.ERROR} stopping process: {stop['_pid']}: {err}"
