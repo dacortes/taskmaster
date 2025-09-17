@@ -1,6 +1,6 @@
 programs:
   example:
-    command: "/usr/bin/python  /home/luis/proyects/taskmaster/worker/worker.py"
+    command: "/usr/bin/python3  /workspaces/taskmaster/worker/worker.py"
     processes: 2
     start_at_launch: true
     restart_policy: "on_failure"
@@ -22,7 +22,7 @@ programs:
     umask: 027
 
   working_dir_and_env:
-    command: "/usr/bin/python  /home/luis/proyects/taskmaster/worker/working_dir_and_env.py"
+    command: "/usr/bin/python3  /workspaces/taskmaster/worker/working_dir_and_env.py"
     processes: 1
     start_at_launch: true
     restart_policy: "on_failure"
@@ -44,7 +44,7 @@ programs:
     umask: 027
 
   discard_output_example:
-    command: "/usr/bin/python  /home/luis/proyects/taskmaster/worker/worker.py"
+    command: "/usr/bin/python3  /workspaces/taskmaster/worker/worker.py"
     processes: 1
     start_at_launch: true
     restart_policy: "on_failure"
@@ -59,7 +59,7 @@ programs:
 
 
   fails:
-    command: "/usr/bin/python  /home/luis/proyects/taskmaster/worker/fails.py"
+    command: "/usr/bin/python3  /workspaces/taskmaster/worker/fails.py"
     processes: 1
     start_at_launch: true
     restart_policy: "on_failure"
@@ -81,7 +81,7 @@ programs:
     umask: 027
 
   success_timeout:
-    command: "/usr/bin/python  /home/luis/proyects/taskmaster/worker/success_time_out.py"
+    command: "/usr/bin/python3  /workspaces/taskmaster/worker/success_time_out.py"
     processes: 1
     start_at_launch: true
     restart_policy: "on_failure"
@@ -97,7 +97,7 @@ programs:
     umask: 027
 
   fail_timeout:
-    command: "/usr/bin/python  /home/luis/proyects/taskmaster/worker/fail_time_out.py"
+    command: "/usr/bin/python3  /workspaces/taskmaster/worker/fail_time_out.py"
     processes: 1
     start_at_launch: true
     restart_policy: "on_failure"
@@ -114,7 +114,7 @@ programs:
 
 
   takes_too_long_to_die:
-    command: "/usr/bin/python  /home/luis/proyects/taskmaster/worker/takes_too_long_to_die.py"
+    command: "/usr/bin/python3  /workspaces/taskmaster/worker/takes_too_long_to_die.py"
     processes: 1
     start_at_launch: true
     restart_policy: "on_failure"

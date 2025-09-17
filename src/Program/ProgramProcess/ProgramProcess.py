@@ -282,6 +282,12 @@ class ProgramProcess(BaseUtils, dict):
                     logger.info(
                         f"{self.RED}Max restarts reached for process index {index}{self.END}"
                     )
+        else:
+            proc_info["_status"] = "closed"
+            proc_info["_exit_code"] = exit_code
+            # logger.info(
+            #     f"Process index {index} exited normally with code {exit_code}"
+            # )
 
     def restartProcess(self):
         for index in range(1, self._num_proc + 1):
