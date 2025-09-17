@@ -279,6 +279,7 @@ class ProgramProcess(BaseUtils, dict):
             else:
                 if self._log_restart_fails:
                     self._log_restart_fails = False
+                    proc_info["_exit_code"] = exit_code
                     logger.info(
                         f"{self.RED}Max restarts reached for process index {index}{self.END}"
                     )

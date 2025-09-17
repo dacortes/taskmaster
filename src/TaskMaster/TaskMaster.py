@@ -1,6 +1,7 @@
 import signal
 import threading
 import time
+import sys
 
 import yaml
 
@@ -17,6 +18,7 @@ class TaskMaster(BaseUtils):
     def __init__(self, config: dict):
         # Registrar el handler
         signal.signal(signal.SIGHUP, self.handle_sighup)
+        signal.signal(signal.SIGINT, self.handle_sig_ign)
         self.config = config
         self.new_config = None
         self.programs = {}
@@ -41,6 +43,17 @@ class TaskMaster(BaseUtils):
         self._num_proc = len(self.programs)
         self.monitorProcesses()
         logger.info("TaskMaster initialized.")
+
+    def __del__(self):
+        try:
+            for program in self.programs:
+                self.stopProcess(program)
+            logger.info("TaskMaster stopped and cleaned up.")
+        except Exception as e:
+            logger.error(f"Error while stopping processes in __del__: {e}", exc_info=True)
+        finally:
+            sys.exit(0)
+
 
     def _get_config(self) -> dict:
         logger.debug(f"Reloading YAML file: {self.file_path}")
@@ -125,6 +138,10 @@ class TaskMaster(BaseUtils):
         logger.info("signal: SIGHUP, reload config file...")
         self.reboot()
 
+    def handle_sig_ign(self, signum, frame):
+        logger.info("signal: SIG_IGN, close Taskmaster...")
+        self.__del__()
+
     def reboot(self):
         self.new_config = self._get_config()
         self.configCmp()
@@ -160,7 +177,6 @@ class TaskMaster(BaseUtils):
         return (
             f"TaskMaster(config={self.config}, programs={[p for p in self.programs]})"
         )
-
 
 if __name__ == '__main__':
     config = {
