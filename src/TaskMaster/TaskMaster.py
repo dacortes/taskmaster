@@ -113,14 +113,15 @@ class TaskMaster(BaseUtils):
             while True:
                 try:
                     for program in self.programs.values():
+                        # print(f"*******{program["start_at_launch"]}*********")
                         program.check_startup_timeouts()
                         program.restartProcess()
                 except Exception as e:
                     logger.error(e, exc_info=True)
                 time.sleep(1)
 
-        thread = threading.Thread(target=monitor, daemon=True)
-        thread.start()
+        self.thread = threading.Thread(target=monitor, daemon=True)
+        self.thread.start()
         logger.info("Started process monitoring thread.")
 
     def getStatus(self, program_name: str = None, process_id: int = None):

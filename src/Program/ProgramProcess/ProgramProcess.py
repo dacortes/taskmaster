@@ -222,6 +222,7 @@ class ProgramProcess(BaseUtils, dict):
         logger.info(f"Process '{process.pid}' stopped.")
 
     def _stopAllProcess(self):
+        print(f"buenas loco jajjajajajjajajaja {self}")
         for new in range(1, self._num_proc + 1):
             if (new) in self._processes and self._processes[new][
                 "_status"
@@ -248,7 +249,7 @@ class ProgramProcess(BaseUtils, dict):
         return proc
 
     def _restartProcessIfNeeded(self, index):
-        if not self._processes:
+        if not self._processes or self["start_at_launch"] == False:
             return
         proc_info = self._processes[index]
         exit_code = proc_info["_popen"].poll()

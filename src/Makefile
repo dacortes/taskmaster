@@ -55,14 +55,15 @@ test-%:
 		printf "$(RED)$(LIGTH)[ERROR]$(END) Configuration $*.yaml not found in $(CONFIG_DIR)\n"; \
 		$(SHOW_CONFIGS); \
 	fi
-update:
-	@pid=$$(ps -ef | grep "[t]askmaster main.py" | awk '{print $$2}' | head -n 1); \
+update: #only for 
+	@pid=$$(ps -a | grep -w "python" | awk '{print$$1}'); \
 	if [ -n "$$pid" ]; then \
-		printf "$(BLUE)$(LIGTH)Sending SIGHUP to process $$pid$ $(END)\n"; \
-		kill -1 $$pid; \
-	else \
-		printf "$(RED)$(LIGTH)[ERROR]$(END) No taskmaster main.py process found\n"; \
-	fi
+ 		printf "$(BLUE)$(LIGTH)Sending SIGHUP to process $$pid$ $(END)\n"; \
+ 		kill -1 $$pid; \
+ 	else \
+ 		printf "$(RED)$(LIGTH)[ERROR]$(END) No taskmaster main.py process found\n"; \
+ 	fi
+# 	@pid=$$(ps -ef | grep "[t]askmaster main.py" | awk '{print $$2}' | head -n 1); \
 
 clear:
 	printf "$(BLUE)$(LIGTH)files deleted from test worker$(END)\n"
