@@ -8,8 +8,7 @@ class Program:
         logger.debug(f"Initializing Program with config: {dict}")
         self._program_config = ProgramConfig(dict)
         self._process = ProgramProcess(self._program_config)
-        self.startProcess()
-        logger.info(f"Program '{self._program_config.name}' initialized.")
+        logger.debug(f"Program '{self._program_config.name}' initialized.")
 
     def getStatus(self, process_id: int = None):
         self._process.getStatus(process_id)
@@ -31,6 +30,12 @@ class Program:
 
     def rebootProcess(self):
         self._process.rebootProcess()
+
+    def get(self, key, default=None):
+        return self._process.get(key, default)
+
+    def update(self, other_dict):
+        self._process.update(other_dict)
 
     def __getitem__(self, key):
         return self._process[key]

@@ -23,26 +23,33 @@ class TaskMaster(BaseUtils):
         self.new_config = None
         self.programs = {}
         self.file_path = self.config["file_path"]
+        self._new_programs = {}
 
         programs_config = self.config.get("programs", {})
+        self.programs, self._num_proc = self._get_new_programs(programs_config)
+        for program in self.programs.values():
+            program.startProcess()
+        self.monitorProcesses()
+        logger.info("TaskMaster initialized.")
+
+    def _get_new_programs(self, programs_config) -> dict | int:
         if not programs_config:
             raise ValueError("No programs defined in configuration")
-
+        new_programs = {}
         for k, v in programs_config.items():
             # Since we don't include name in the configs,
             # we assign name using the key in the list of dicts
             if "name" not in v:
                 v["name"] = k
             try:
-                self.programs[v["name"]] = Program(v)
+                new_programs[v["name"]] = Program(v)
             except Exception as e:
                 logger.error(
                     f"Error initializing program {v['name']}: {e}",
                     exc_info=True,
                 )
-        self._num_proc = len(self.programs)
-        self.monitorProcesses()
-        logger.info("TaskMaster initialized.")
+        num_proc = len(new_programs)
+        return new_programs, num_proc
 
     def __del__(self):
         try:
@@ -60,10 +67,30 @@ class TaskMaster(BaseUtils):
         with open(self.file_path, "r") as f:
             return yaml.safe_load(f)
 
-    def configCmp(self):
-        old_programs = self.config["programs"]
-        new_programs = self.new_config.get("programs", None)
+    def _stop_all_processes(self):
+        for program in self.programs:
+            self.stopProcess(program)
+        self.programs = {}
 
+    def configCmp(self):
+        if self.new_config is None:
+            logger.warning("new config is None")
+            self._stop_all_processes()
+            return
+        elif self.config is None and self.new_config is None:
+            logger.warning("old config is None, new config is None")
+            return
+        elif self.new_config is not None:
+            try:
+                new_programs, self._num_proc = self._get_new_programs(
+                    self.new_config.get("programs", None)
+                )
+            except Exception as e:
+                logger.warning(f"{e}")
+                new_programs = None
+        old_programs = self.programs.copy()
+        # In case we don't have any programs in the new config
+        # we stop all current processes
         if new_programs is None:
             logger.warning("new programs is None")
             for program in old_programs:
@@ -151,6 +178,7 @@ class TaskMaster(BaseUtils):
         for program in self.programs.values():
             if program["start_at_launch"]:
                 program.rebootProcess()
+        self.config = self.new_config
 
     def startProcess(self, process_name: str):
         if process_name not in self.programs:
