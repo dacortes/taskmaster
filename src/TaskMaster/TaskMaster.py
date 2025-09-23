@@ -1,7 +1,7 @@
 import signal
+import sys
 import threading
 import time
-import sys
 
 import yaml
 
@@ -50,10 +50,9 @@ class TaskMaster(BaseUtils):
                 self.stopProcess(program)
             logger.info("TaskMaster stopped and cleaned up.")
         except Exception as e:
-            logger.error(f"Error while stopping processes in __del__: {e}", exc_info=True)
-        finally:
-            sys.exit(0)
-
+            logger.error(
+                f"Error while stopping processes in __del__: {e}", exc_info=True
+            )
 
     def _get_config(self) -> dict:
         logger.debug(f"Reloading YAML file: {self.file_path}")
@@ -67,6 +66,9 @@ class TaskMaster(BaseUtils):
 
         if new_programs is None:
             logger.warning("new programs is None")
+            for program in old_programs:
+                self.stopProcess(program)
+            self.programs = {}
             return
         for program, config in new_programs.items():
             restart = False
@@ -75,7 +77,6 @@ class TaskMaster(BaseUtils):
             if program not in old_programs:
                 self.programs[config["name"]] = Program(config)
                 self.startProcess(program)
-                continue
             else:
                 for cmd in LIST_RESTART:
                     if cmd not in old_programs[program] and cmd not in config:
@@ -142,6 +143,7 @@ class TaskMaster(BaseUtils):
     def handle_sig_ign(self, signum, frame):
         logger.info("signal: SIG_IGN, close Taskmaster...")
         self.__del__()
+        sys.exit(0)
 
     def reboot(self):
         self.new_config = self._get_config()
@@ -178,6 +180,7 @@ class TaskMaster(BaseUtils):
         return (
             f"TaskMaster(config={self.config}, programs={[p for p in self.programs]})"
         )
+
 
 if __name__ == '__main__':
     config = {
