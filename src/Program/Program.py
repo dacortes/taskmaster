@@ -19,11 +19,11 @@ class Program:
     def startProcess(self):
         self._process.startProcess()
 
-    def stopProcess(self, index=None):
-        self._process.stopProcess(index)
+    def stopProcess(self, index=None, flag=None):
+        self._process.stopProcess(index, flag=flag)
 
-    def restartProcess(self):
-        self._process.restartProcess()
+    def restartProcess(self, flag=None):
+        self._process.restartProcess(flag)
 
     def check_startup_timeouts(self):
         self._process.check_startup_timeouts()

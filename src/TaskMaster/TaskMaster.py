@@ -141,7 +141,6 @@ class TaskMaster(BaseUtils):
             while True:
                 try:
                     for program in self.programs.values():
-                        # print(f"*******{program["start_at_launch"]}*********")
                         program.check_startup_timeouts()
                         program.restartProcess()
                 except Exception as e:
@@ -192,13 +191,13 @@ class TaskMaster(BaseUtils):
         if process_name not in self.programs:
             raise ValueError(f"The process {process_name} does not exist")
         logger.info(f"Stopping process '{process_name}'")
-        self.programs[process_name].stopProcess(index)
+        self.programs[process_name].stopProcess(index, flag=True)
 
     def restartProcess(self, process_name: str = None):
         if process_name and process_name not in self.programs:
             raise ValueError(f"The process {process_name} does not exist")
         logger.info(f"Restarting process '{process_name}'")
-        self.programs[process_name].restartProcess()
+        self.programs[process_name].restartProcess(flag=True)
 
     def reloadConfig(self):
         logger.info("Reloading configuration.")

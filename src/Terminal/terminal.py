@@ -115,3 +115,4 @@ class InteractiveTerminal:
     def _cmd_quit(self):
         print("[Quit] Exiting program.")
         self.running = False
+        self.tm.__del__()
