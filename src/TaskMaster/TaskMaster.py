@@ -1,4 +1,5 @@
 import signal
+import sys
 import threading
 import time
 
@@ -17,30 +18,48 @@ class TaskMaster(BaseUtils):
     def __init__(self, config: dict):
         # Registrar el handler
         signal.signal(signal.SIGHUP, self.handle_sighup)
+        signal.signal(signal.SIGINT, self.handle_sig_ign)
         self.config = config
         self.new_config = None
         self.programs = {}
         self.file_path = self.config["file_path"]
+        self._new_programs = {}
 
         programs_config = self.config.get("programs", {})
+        self.programs, self._num_proc = self._get_new_programs(programs_config)
+        for program in self.programs.values():
+            program.startProcess()
+        self.monitorProcesses()
+        logger.info("TaskMaster initialized.")
+
+    def _get_new_programs(self, programs_config) -> dict | int:
         if not programs_config:
             raise ValueError("No programs defined in configuration")
-
+        new_programs = {}
         for k, v in programs_config.items():
             # Since we don't include name in the configs,
             # we assign name using the key in the list of dicts
             if "name" not in v:
                 v["name"] = k
             try:
-                self.programs[v["name"]] = Program(v)
+                new_programs[v["name"]] = Program(v)
             except Exception as e:
                 logger.error(
                     f"Error initializing program {v['name']}: {e}",
                     exc_info=True,
                 )
-        self._num_proc = len(self.programs)
-        self.monitorProcesses()
-        logger.info("TaskMaster initialized.")
+        num_proc = len(new_programs)
+        return new_programs, num_proc
+
+    def __del__(self):
+        try:
+            for program in self.programs:
+                self.stopProcess(program)
+            logger.info("TaskMaster stopped and cleaned up.")
+        except Exception as e:
+            logger.error(
+                f"Error while stopping processes in __del__: {e}", exc_info=True
+            )
 
     def _get_config(self) -> dict:
         logger.debug(f"Reloading YAML file: {self.file_path}")
@@ -48,12 +67,35 @@ class TaskMaster(BaseUtils):
         with open(self.file_path, "r") as f:
             return yaml.safe_load(f)
 
-    def configCmp(self):
-        old_programs = self.config["programs"]
-        new_programs = self.new_config.get("programs", None)
+    def _stop_all_processes(self):
+        for program in self.programs:
+            self.stopProcess(program)
+        self.programs = {}
 
+    def configCmp(self):
+        if self.new_config is None:
+            logger.warning("new config is None")
+            self._stop_all_processes()
+            return
+        elif self.config is None and self.new_config is None:
+            logger.warning("old config is None, new config is None")
+            return
+        elif self.new_config is not None:
+            try:
+                new_programs, self._num_proc = self._get_new_programs(
+                    self.new_config.get("programs", None)
+                )
+            except Exception as e:
+                logger.warning(f"{e}")
+                new_programs = None
+        old_programs = self.programs.copy()
+        # In case we don't have any programs in the new config
+        # we stop all current processes
         if new_programs is None:
             logger.warning("new programs is None")
+            for program in old_programs:
+                self.stopProcess(program)
+            self.programs = {}
             return
         for program, config in new_programs.items():
             restart = False
@@ -62,7 +104,6 @@ class TaskMaster(BaseUtils):
             if program not in old_programs:
                 self.programs[config["name"]] = Program(config)
                 self.startProcess(program)
-                continue
             else:
                 for cmd in LIST_RESTART:
                     if cmd not in old_programs[program] and cmd not in config:
@@ -106,8 +147,8 @@ class TaskMaster(BaseUtils):
                     logger.error(e, exc_info=True)
                 time.sleep(1)
 
-        thread = threading.Thread(target=monitor, daemon=True)
-        thread.start()
+        self.thread = threading.Thread(target=monitor, daemon=True)
+        self.thread.start()
         logger.info("Started process monitoring thread.")
 
     def getStatus(self, program_name: str = None, process_id: int = None):
@@ -125,12 +166,18 @@ class TaskMaster(BaseUtils):
         logger.info("signal: SIGHUP, reload config file...")
         self.reboot()
 
+    def handle_sig_ign(self, signum, frame):
+        logger.info("signal: SIG_IGN, close Taskmaster...")
+        self.__del__()
+        sys.exit(0)
+
     def reboot(self):
         self.new_config = self._get_config()
         self.configCmp()
         for program in self.programs.values():
             if program["start_at_launch"]:
                 program.rebootProcess()
+        self.config = self.new_config
 
     def startProcess(self, process_name: str):
         if process_name not in self.programs:
@@ -144,13 +191,13 @@ class TaskMaster(BaseUtils):
         if process_name not in self.programs:
             raise ValueError(f"The process {process_name} does not exist")
         logger.info(f"Stopping process '{process_name}'")
-        self.programs[process_name].stopProcess(index)
+        self.programs[process_name].stopProcess(index, flag=True)
 
     def restartProcess(self, process_name: str = None):
         if process_name and process_name not in self.programs:
             raise ValueError(f"The process {process_name} does not exist")
         logger.info(f"Restarting process '{process_name}'")
-        self.programs[process_name].restartProcess()
+        self.programs[process_name].restartProcess(flag=True)
 
     def reloadConfig(self):
         logger.info("Reloading configuration.")

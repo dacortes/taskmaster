@@ -223,9 +223,8 @@ class ProgramProcess(BaseUtils, dict):
 
     def _stopAllProcess(self):
         for new in range(1, self._num_proc + 1):
-            if (new) in self._processes and self._processes[new][
-                "_status"
-            ] == "running":
+            if (new) in self._processes and self._processes[new]["_status"] == "running" or  \
+            self._processes[new]["_status"] == "starting":
                 process = self._processes[new]["_popen"]
                 try:
                     self._stopSingleProcess(process)
@@ -247,10 +246,12 @@ class ProgramProcess(BaseUtils, dict):
             proc = self._processes.get(pid, None)
         return proc
 
-    def _restartProcessIfNeeded(self, index):
-        if not self._processes:
+    def _restartProcessIfNeeded(self, index, flag=None):
+        if not self._processes or self["start_at_launch"] == False:
             return
         proc_info = self._processes[index]
+        if flag and proc_info["_status"] == "stopped":
+            return
         exit_code = proc_info["_popen"].poll()
         if exit_code is None:
             return
@@ -279,13 +280,20 @@ class ProgramProcess(BaseUtils, dict):
             else:
                 if self._log_restart_fails:
                     self._log_restart_fails = False
+                    proc_info["_exit_code"] = exit_code
                     logger.info(
                         f"{self.RED}Max restarts reached for process index {index}{self.END}"
                     )
+        else:
+            proc_info["_status"] = "closed"
+            proc_info["_exit_code"] = exit_code
+            # logger.info(
+            #     f"Process index {index} exited normally with code {exit_code}"
+            # )
 
-    def restartProcess(self):
+    def restartProcess(self,  flag=None):
         for index in range(1, self._num_proc + 1):
-            self._restartProcessIfNeeded(index)
+            self._restartProcessIfNeeded(index, flag)
 
     def rebootProcess(self):
         for index in range(1, self._num_proc + 1):
@@ -330,7 +338,7 @@ class ProgramProcess(BaseUtils, dict):
             stop = self._getProcess(index, pid)
             if stop is None:
                 return
-            if stop["_status"] != "running":
+            if stop["_status"] != "running" or stop["_status"] != "starting":
                 return
             logger.debug(stop)
             try:
