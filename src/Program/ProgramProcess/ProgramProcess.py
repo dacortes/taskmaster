@@ -223,22 +223,25 @@ class ProgramProcess(BaseUtils, dict):
 
     def _stopAllProcess(self):
         for new in range(1, self._num_proc + 1):
-            if (new) in self._processes and self._processes[new]["_status"] == "running" or  \
-            self._processes[new]["_status"] == "starting":
-                process = self._processes[new]["_popen"]
-                try:
-                    self._stopSingleProcess(process)
-                    self._processes[new]["_status"] = "stopped"
-                    self._processes[new]["_exit_code"] = process.returncode
-                    self._processes[new]["stop_time"] = time.time()
-                    self._processes[new]["_stop_signal_used"] = self._stop_timeout
-                    logger.debug(
-                        f"{self.YELLOW} Process {self.END} program index:{new} -- pid:{self._processes[new]['_pid']} {self.RED}{self.LIGTH}stopped{self.END}"
-                    )
-                except Exception as err:
-                    raise ValueError(
-                        f"{self.ERROR} stopping process: {self._processes[new]['_pid']}: {err}"
-                    )
+            if (new) in self._processes:
+                if (
+                    self._processes[new]["_status"] == "running"
+                    or self._processes[new]["_status"] == "starting"
+                ):
+                    process = self._processes[new]["_popen"]
+                    try:
+                        self._stopSingleProcess(process)
+                        self._processes[new]["_status"] = "stopped"
+                        self._processes[new]["_exit_code"] = process.returncode
+                        self._processes[new]["stop_time"] = time.time()
+                        self._processes[new]["_stop_signal_used"] = self._stop_timeout
+                        logger.debug(
+                            f"{self.YELLOW} Process {self.END} program index:{new} -- pid:{self._processes[new]['_pid']} {self.RED}{self.LIGTH}stopped{self.END}"
+                        )
+                    except Exception as err:
+                        raise ValueError(
+                            f"{self.ERROR} stopping process: {self._processes[new]['_pid']}: {err}"
+                        )
 
     def _getProcess(self, index=None, pid=None):
         proc = self._processes.get(index, None)
@@ -247,7 +250,7 @@ class ProgramProcess(BaseUtils, dict):
         return proc
 
     def _restartProcessIfNeeded(self, index, flag=None):
-        if not self._processes or self["start_at_launch"] == False:
+        if not self._processes or not self["start_at_launch"]:
             return
         proc_info = self._processes[index]
         if flag and proc_info["_status"] == "stopped":
@@ -291,7 +294,7 @@ class ProgramProcess(BaseUtils, dict):
             #     f"Process index {index} exited normally with code {exit_code}"
             # )
 
-    def restartProcess(self,  flag=None):
+    def restartProcess(self, flag=None):
         for index in range(1, self._num_proc + 1):
             self._restartProcessIfNeeded(index, flag)
 
