@@ -294,9 +294,21 @@ class ProgramProcess(BaseUtils, dict):
             #     f"Process index {index} exited normally with code {exit_code}"
             # )
 
-    def restartProcess(self, flag=None):
-        for index in range(1, self._num_proc + 1):
-            self._restartProcessIfNeeded(index, flag)
+    def restartProcess(self, flag=None, cmd_terminal=False):
+        if cmd_terminal:
+            self.stopProcess()
+            for index in range(1, self._num_proc + 1):
+                logger.info(
+                    f"{self.YELLOW}Restarting process index {index}...{self.END}"
+                )
+                proc = self._processes.get(index, None)
+                if proc is None:
+                    continue
+                new = self._initProcess(name_proc=self["name"], index=index)
+                self._processes.update({index: new})
+        else:
+            for index in range(1, self._num_proc + 1):
+                self._restartProcessIfNeeded(index, flag)
 
     def rebootProcess(self):
         for index in range(1, self._num_proc + 1):

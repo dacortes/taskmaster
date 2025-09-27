@@ -22,7 +22,7 @@ if __name__ == "__main__":
     runtime = random.randint(5, 15)
     i = 0
     while running and i < runtime:
-        print(f"[PID={os.getpid()}] Running... {i+1}/{runtime}")
+        print(f"[PID={os.getpid()}] Running... {i + 1}/{runtime}")
         time.sleep(1)
         i += 1
 

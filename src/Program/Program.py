@@ -22,8 +22,8 @@ class Program:
     def stopProcess(self, index=None, flag=None):
         self._process.stopProcess(index, flag=flag)
 
-    def restartProcess(self, flag=None):
-        self._process.restartProcess(flag)
+    def restartProcess(self, flag=None, cmd_terminal=False):
+        self._process.restartProcess(flag=flag, cmd_terminal=cmd_terminal)
 
     def check_startup_timeouts(self):
         self._process.check_startup_timeouts()

@@ -107,7 +107,7 @@ class InteractiveTerminal:
 
     def _cmd_restart(self):
         process_name = self.cmd_options[0] if self.cmd_options else None
-        self.tm.restartProcess(process_name)
+        self.tm.restartProcess(process_name, cmd_terminal=True)
 
     def _cmd_reload(self):
         self.tm.reloadConfig()

@@ -193,11 +193,11 @@ class TaskMaster(BaseUtils):
         logger.info(f"Stopping process '{process_name}'")
         self.programs[process_name].stopProcess(index, flag=True)
 
-    def restartProcess(self, process_name: str = None):
+    def restartProcess(self, process_name: str = None, cmd_terminal=False):
         if process_name and process_name not in self.programs:
             raise ValueError(f"The process {process_name} does not exist")
         logger.info(f"Restarting process '{process_name}'")
-        self.programs[process_name].restartProcess(flag=True)
+        self.programs[process_name].restartProcess(flag=True, cmd_terminal=cmd_terminal)
 
     def reloadConfig(self):
         logger.info("Reloading configuration.")
